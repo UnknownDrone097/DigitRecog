@@ -1,8 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Linq;
-
 namespace Digits
 {
     public class NeuralNet
@@ -16,11 +11,37 @@ namespace Digits
             Reader r = new Reader();
             int correct = r.ReadNextLabel()[0];
             int[] image = r.ReadNextImage();
-            
+
         }
         public void LossFunction(int[] image, int correct)
         {
             //use https://towardsdatascience.com/linear-regression-using-gradient-descent-97a6c8700931 to continue
+            foreach (Neuron n in Neurons)
+            {
+                if (n.layer == 0)
+                {
+                    double derrivative = 0;
+                    foreach (int i in image)
+                    {
+                        derrivative += i/* * (mean - predicted)*/;
+                    }
+                    continue;
+                }
+                if (n.layer == depth)
+                {
+                    double derrivative = 0;
+                    foreach (KeyValuePair<Neuron, double[]> kvp in n.layWeightBias)
+                    {
+                        if (Outputs[correct] == n) { derrivative += kvp.Key.currentVal * (1 - n.currentVal); }
+                        else { derrivative += kvp.Key.currentVal * (-n.currentVal); } 
+                    }
+                    derrivative *= ((double)-2 / 10);
+                }
+                else
+                {
+
+                }
+            }
         }
         public void computecvals(int[] image)
         {
@@ -89,7 +110,7 @@ namespace Digits
                             }
                             //Output of the NN is this neuron
                             Outputs[j] = n;
-                        }                   
+                        }
                     }
                 }
             }
@@ -110,7 +131,7 @@ namespace Digits
         {
             currentVal = cval; layer = lay;
             NN = nn; nn.Neurons.Add(this);
-            weights = ws;
+            weights = ws; biases = bs;
         }
         /// <summary>
         /// Make sure to specify the wets array later! If not, DO NOT use this factory
@@ -126,7 +147,9 @@ namespace Digits
         public Neuron(NeuralNet nn, double cval, int lay, int resolution)
         {
             NN = nn; currentVal = cval; layer = lay; NN.Neurons.Add(this);
-            weights = new double[resolution]; layWeightBias = new Dictionary<Neuron, double[]>();
+            weights = new double[resolution * resolution];
+            biases = new double[resolution * resolution];
+            layWeightBias = new Dictionary<Neuron, double[]>();
         }
         public void computeCVal(int[] array)
         {

@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-
 namespace Digits
 {
     class Reader
     {
         //Need to check for end of file
-        private readonly string LabelPath = @"C:\Users\gwflu\Desktop\Test\train-labels-idx1-ubyte\train-labels.idx1-ubyte";
-        private readonly string ImagePath = @"C:\Users\gwflu\Desktop\Test\train-images-idx3-ubyte\train-images.idx3-ubyte";
+        private readonly string LabelPath = @"H:\Documents\train-labels-idx1-ubyte";
+        private readonly string ImagePath = @"H:\Documents\train-images-idx3-ubyte";
         int LabelOffset = 8;
         int ImageOffset = 16;
         int Resolution = 28;
@@ -22,7 +17,7 @@ namespace Digits
             {
                 fs.Read(b, 0, 1);
             }
-            catch { Console.WriteLine("Reset; ImageOffset = " + LabelOffset.ToString()); LabelOffset = 0; }          
+            catch { Console.WriteLine("Reset; ImageOffset = " + LabelOffset.ToString()); LabelOffset = 0; }
             int[] result = Array.ConvertAll(b, Convert.ToInt32);
             LabelOffset++;
             fs.Close();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Digits
 {
@@ -15,6 +16,16 @@ namespace Digits
             array = r.ReadNextImage();
             foreach (int i in num) { Console.WriteLine("\n" + i); }
             r.PrintArray(array);
+
+            NeuralNet nn = new NeuralNet();
+            
+            Data.ReadNs(nn, true, @"H:\Documents\wets.txt", 28);
+            Data.ReadNs(nn, false, @"H:\Documents\bias.txt", 28);
+            /*
+            nn.initNN();
+            Data.WriteNs(nn, true, @"H:\Documents\wets.txt", 28);
+            Data.WriteNs(nn, false, @"H:\Documents\bias.txt", 28);
+            */
         }
     }
 

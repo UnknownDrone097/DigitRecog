@@ -25,6 +25,19 @@ namespace Digits
         public N[] Outputs = new N[OutputCount];
         //Layer, n
         N[,] Neurons = new N[Depth, Count];
+        public NN()
+        {
+            //Initialize neurons
+            for (int i = 0; i < Depth; i++)
+            {
+                for (int ii = 0; ii < Count; ii++)
+                {
+                    N n = new N();
+                    Neurons[i, ii] = n;
+                    if (i == Depth - 1) { Outputs[ii] = n; }
+                }
+            }
+        }
         public void stochasticdescent()
         {
             //Input layer
@@ -69,16 +82,16 @@ namespace Digits
                             {
                                 upperlayerderiv += HiddenWeights[0, i, k] * Sigmoid.sigmoidderiv((InputWeights[i, k] * Neurons[1, i].value) + InputBiases[i, k]) * HiddenWeightGradient[0, i, k];
                             }
-                            double zval = (InputWeights[k, j] * image[k, j]) + InputBiases[k, j];                        
+                            double zval = (InputWeights[k, j] * image[k, j]) + InputBiases[k, j];
                             InputWeightGradient[k, j] = image[k, j] * Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
                             InputBiasGradient[k, j] = Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
-                        }                       
+                        }
                     }
                     continue;
                 }
                 for (int k = 0; k < Count - 1; k++)
                 {
-                    
+
                     //If an output layer
                     if (l == Depth - 2)
                     {
@@ -122,19 +135,19 @@ namespace Digits
                         {
                             for (int jj = 0; jj < (Resolution * Resolution); jj++)
                             {
-                                Neurons[0, k].value += (InputWeights[j, jj] * image[jj / Resolution, jj - ((jj / Resolution) * Resolution)]) + InputBiases[j, jj];
-                            }
-                        }
+                                Neurons[0, k].value += (InputWeights[j, jj] * image[jj / Resolution, jj - ((jj / Resolution) * Resolution)]) + InputBiases[j, jj];                               
+                            }                           
+                        }                     
                     }
                     //Calc hidden layers
                     else
                     {
                         for (int j = 0; j < Count; j++)
                         {
-                            Neurons[l, k].value += (HiddenWeights[l, k, j] * Neurons[l - 1, j].value) + HiddenBiases[l, k, j];
+                            Neurons[l, k].value += (HiddenWeights[l, k, j] * Neurons[l - 1, j].value) + HiddenBiases[l, k, j];                            
                         }
-                    }                
-                    Neurons[l, k].value = Sigmoid.sigmoid(Neurons[l, k].value);
+                    }
+                    Neurons[0, k].value = Sigmoid.sigmoid(Neurons[0, k].value);
                 }
             }
         }
@@ -146,8 +159,8 @@ namespace Digits
             {
                 for (int ii = 0; ii < (Resolution * Resolution); ii++)
                 {
-                    InputWeights[i, ii] = r.Next(-9, 9);
-                    InputBiases[i, ii] = r.Next(-9, 9);
+                    InputWeights[i, ii] = (double)r.Next(-99, 99)/10000;
+                    InputBiases[i, ii] = (double)r.Next(-99, 99)/10000;
                 }
             }
             //Initialize hidden weights/biases
@@ -157,8 +170,8 @@ namespace Digits
                 {
                     for (int iii = 0; iii < Count; iii++)
                     {
-                        HiddenWeights[i, ii, iii] = r.Next(-9, 9);
-                        HiddenBiases[i, ii, iii] = r.Next(-9, 9);
+                        HiddenWeights[i, ii, iii] = (double)r.Next(-99, 99)/10000;
+                        HiddenBiases[i, ii, iii] = (double)r.Next(-99, 99)/10000;
                     }
                 }
             }

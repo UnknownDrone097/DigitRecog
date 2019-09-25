@@ -6,7 +6,7 @@ namespace Digits
 {
     class D
     {
-        const string Path = @"C:\Users\gwflu\Desktop\Test\Digits.txt";
+        const string Path = @"C:\Users\1135606\source\repos\maybedigits\maybedigits\WBs.txt";
 
         public static void ReadWeightBias(NN nn)
         {

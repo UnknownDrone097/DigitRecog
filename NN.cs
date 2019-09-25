@@ -1,183 +1,192 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+
 namespace Digits
 {
-    public class NeuralNet
+    class NN
     {
-        public List<Neuron> Neurons = new List<Neuron>();
-        public Neuron[] Outputs = new Neuron[10];
-        public static int depth = 3;
-        public static int count = 7;
-        public void Learn()
-        {
-            Reader r = new Reader();
-            int correct = r.ReadNextLabel()[0];
-            int[] image = r.ReadNextImage();
+        public static int Depth = 3;
+        //Happens to work out that Count == OutputCount, but if this changes code will need to be refactored to account
+        public static int Count = 10;
+        public static int OutputCount = 10;
+        public static int Resolution = 28;
+        //Weights/biases
+        public double[,] InputWeights = new double[Count, Resolution * Resolution];
+        public double[,] InputBiases = new double[Count, Resolution * Resolution];
+        public double[,,] HiddenWeights = new double[Depth - 1, Count, Count];
+        public double[,,] HiddenBiases = new double[Depth - 1, Count, Count];
+        //Gradients
+        public double[,] InputWeightGradient = new double[Count, Resolution * Resolution];
+        public double[,] InputBiasGradient = new double[Count, Resolution * Resolution];
+        public double[,,] HiddenWeightGradient = new double[Depth - 1, Count, Count];
+        public double[,,] HiddenBiasGradient = new double[Depth - 1, Count, Count];
 
-        }
-        public void LossFunction(int[] image, int correct)
+        public N[] Outputs = new N[OutputCount];
+        //Layer, n
+        N[,] Neurons = new N[Depth, Count];
+        public void stochasticdescent()
         {
-            //use https://towardsdatascience.com/linear-regression-using-gradient-descent-97a6c8700931 to continue
-            foreach (Neuron n in Neurons)
+            //Input layer
+            for (int i = 0; i < Count; i++)
             {
-                if (n.layer == 0)
+                for (int ii = 0; ii < Resolution * Resolution; ii++)
                 {
-                    double derrivative = 0;
-                    foreach (int i in image)
+                    InputWeights[i, ii] -= InputWeightGradient[i, ii];
+                    InputBiases[i, ii] -= InputBiasGradient[i, ii];
+                }
+            }
+            //Hidden layers
+            for (int i = 0; i < Depth - 1; i++)
+            {
+                for (int ii = 0; ii < Count; ii++)
+                {
+                    for (int iii = 0; iii < Count; iii++)
                     {
-                        derrivative += i/* * (mean - predicted)*/;
+                        HiddenWeights[i, ii, iii] -= HiddenWeightGradient[i, ii, iii];
+                        HiddenBiases[i, ii, iii] -= HiddenBiasGradient[i, ii, iii];
+                    }
+                }
+            }
+        }
+        public void backprop(int[,] image, int correct)
+        {
+            //Run NN on image
+            calculate(image);
+
+            //Foreach weight/bias
+            for (int l = Depth - 2; l > -1; l--)
+            {
+                //If an input layer
+                if (l == -1)
+                {
+                    for (int k = 0; k < Count; k++)
+                    {
+                        for (int j = 0; j < Resolution * Resolution; j++)
+                        {
+                            double upperlayerderiv = 0;
+                            for (int i = 0; i < Count; i++)
+                            {
+                                upperlayerderiv += HiddenWeights[0, i, k] * Sigmoid.sigmoidderiv((InputWeights[i, k] * Neurons[1, i].value) + InputBiases[i, k]) * HiddenWeightGradient[0, i, k];
+                            }
+                            double zval = (InputWeights[k, j] * image[k, j]) + InputBiases[k, j];                        
+                            InputWeightGradient[k, j] = image[k, j] * Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
+                            InputBiasGradient[k, j] = Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
+                        }                       
                     }
                     continue;
                 }
-                if (n.layer == depth)
+                for (int k = 0; k < Count - 1; k++)
                 {
-                    double derrivative = 0;
-                    foreach (KeyValuePair<Neuron, double[]> kvp in n.layWeightBias)
+                    
+                    //If an output layer
+                    if (l == Depth - 2)
                     {
-                        if (Outputs[correct] == n) { derrivative += kvp.Key.currentVal * (1 - n.currentVal); }
-                        else { derrivative += kvp.Key.currentVal * (-n.currentVal); } 
-                    }
-                    derrivative *= ((double)-2 / 10);
-                }
-                else
-                {
+                        for (int j = 0; j < Count; j++)
+                        {
+                            double zval = (HiddenWeights[l, k, j] * Neurons[l - 1, j].value) + HiddenBiases[l, k, j];
 
+                            int value = 0;
+                            if (j == correct) { value = 1; }
+                            //Formulas
+                            HiddenWeightGradient[l, k, j] = Neurons[l - 1, k].value * Sigmoid.sigmoidderiv(zval) * 2 * (Outputs[j].value - value);
+                            HiddenBiasGradient[l, k, j] = Sigmoid.sigmoidderiv(zval) * 2 * (Outputs[j].value - value);
+                        }
+                        continue;
+                    }
+                    //If a hidden layer
+                    for (int j = 0; j < Count; j++)
+                    {
+                        double upperlayerderiv = 0;
+                        for (int i = 0; i < Count; i++)
+                        {
+                            upperlayerderiv += HiddenWeights[l + 1, i, k] * Sigmoid.sigmoidderiv((HiddenWeights[l + 1, i, k] * Neurons[l + 1, i].value) + HiddenBiases[l + 1, i, k]) * HiddenWeightGradient[l + 1, i, k];
+                        }
+                        double zval = (HiddenWeights[l, k, j] * image[k, j]) + HiddenBiases[l, k, j];
+                        HiddenWeightGradient[l, k, j] = image[k, j] * Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
+                        HiddenBiasGradient[l, k, j] = Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
+                    }
                 }
             }
         }
-        public void computecvals(int[] image)
+        public void calculate(int[,] image)
         {
-            foreach (Neuron n in Neurons)
+            for (int l = 0; l < Depth - 1; l++)
             {
-                n.computeCVal(image);
-            }
-        }
-        public void initNN()
-        {
-            try
-            {
-                //Randomize the weights
-                Random r = new Random();
-                for (int i = 0; i <= depth; i++)
+                for (int k = 0; k < Count; k++)
                 {
-                    if (i == 0)
+                    //Calc input layer
+                    if (l == 0)
                     {
-                        for (int ii = 0; ii <= count - 1; ii++)
+                        for (int j = 0; j < Count; j++)
                         {
-                            //Foreach space in the l1 weight array, randomize it
-                            double[] temps = new double[28 * 28];
-                            for (int j = 0; j < temps.Length; j++) { temps[j] = Sigmoid.sigmoid(r.Next(-9, 9)); }
-                            double[] temps2 = new double[28 * 28];
-                            for (int j = 0; j < temps.Length; j++) { temps2[j] = Sigmoid.sigmoid(r.Next(-9, 9)); }
-                            Neuron n = new Neuron(this, temps, temps2, 0, 0);
-                        }
-                    }
-                    if (i >= 1 && i <= depth - 1)
-                    {
-                        for (int ii = 0; ii <= count - 1; ii++)
-                        {
-                            Neuron n = new Neuron(this, new Dictionary<Neuron, double[]>(), 0, i);
-                            n.layWeightBias.Clear();
-                            foreach (Neuron neu in Neurons)
+                            for (int jj = 0; jj < (Resolution * Resolution); jj++)
                             {
-                                if (neu.layer == n.layer - 1)
-                                {
-                                    if (!n.layWeightBias.ContainsKey(neu))
-                                    {
-                                        //Make a connection of random weight/bias to each neuron with a layer n - 1 lower
-                                        n.layWeightBias.Add(neu, /* Weight/bias for the neuron */ new double[2] { Sigmoid.sigmoid(r.Next(-9, 9)), Sigmoid.sigmoid(r.Next(-9, 9)) });
-                                    }
-                                }
+                                Neurons[0, k].value += (InputWeights[j, jj] * image[jj / Resolution, jj - ((jj / Resolution) * Resolution)]) + InputBiases[j, jj];
                             }
                         }
                     }
-                    if (i == depth)
+                    //Calc hidden layers
+                    else
                     {
-                        //Make outputs coorisponding to digits 0-9
-                        for (int j = 0; j <= 9; j++)
+                        for (int j = 0; j < Count; j++)
                         {
-                            //Make the final neuron (output)
-                            Neuron n = new Neuron(this, new Dictionary<Neuron, double[]>(), 0, i);
-                            n.layWeightBias.Clear();
-                            foreach (Neuron neu in Neurons)
-                            {
-                                if (neu.layer == n.layer - 1)
-                                {
-                                    if (!n.layWeightBias.ContainsKey(neu))
-                                    {
-                                        //Make a connection of random weight/bias to each neuron with a layer n - 1 lower
-                                        n.layWeightBias.Add(neu, /* Weight/bias for the neuron */ new double[2] { Sigmoid.sigmoid(r.Next(-9, 9)), Sigmoid.sigmoid(r.Next(-9, 9)) });
-                                    }
-                                }
-                            }
-                            //Output of the NN is this neuron
-                            Outputs[j] = n;
+                            Neurons[l, k].value += (HiddenWeights[l, k, j] * Neurons[l - 1, j].value) + HiddenBiases[l, k, j];
                         }
+                    }                
+                    Neurons[l, k].value = Sigmoid.sigmoid(Neurons[l, k].value);
+                }
+            }
+        }
+        public void initialize()
+        {
+            Random r = new Random();
+            //Initialize input weights/biases
+            for (int i = 0; i < Count; i++)
+            {
+                for (int ii = 0; ii < (Resolution * Resolution); ii++)
+                {
+                    InputWeights[i, ii] = r.Next(-9, 9);
+                    InputBiases[i, ii] = r.Next(-9, 9);
+                }
+            }
+            //Initialize hidden weights/biases
+            for (int i = 0; i < Depth - 1; i++)
+            {
+                for (int ii = 0; ii < Count; ii++)
+                {
+                    for (int iii = 0; iii < Count; iii++)
+                    {
+                        HiddenWeights[i, ii, iii] = r.Next(-9, 9);
+                        HiddenBiases[i, ii, iii] = r.Next(-9, 9);
                     }
                 }
             }
-            //If it fails, print the error out
-            catch (Exception ex) { Console.WriteLine(ex); }
+            //Initialize neurons
+            for (int i = 0; i < Depth; i++)
+            {
+                for (int ii = 0; ii < Count; ii++)
+                {
+                    N n = new N();
+                    Neurons[i, ii] = n;
+                    if (i == Depth - 1) { Outputs[ii] = n; }
+                }
+            }
         }
     }
-    public class Neuron
+    class N
     {
-        public NeuralNet NN { get; set; }
-        public int layer { get; set; }
-        public double[] weights { get; set; }
-        public double[] biases { get; set; }
-        public Dictionary<Neuron, double[]> layWeightBias = new Dictionary<Neuron, double[]>();
-        public double currentVal;
-
-        public Neuron(NeuralNet nn, double[] ws, double[] bs, double cval, int lay)
-        {
-            currentVal = cval; layer = lay;
-            NN = nn; nn.Neurons.Add(this);
-            weights = ws; biases = bs;
-        }
-        /// <summary>
-        /// Make sure to specify the wets array later! If not, DO NOT use this factory
-        /// </summary>
-        public Neuron(NeuralNet nn, Dictionary<Neuron, double[]> vals, double cval, int lay)
-        {
-            layWeightBias = vals; currentVal = cval; layer = lay; NN = nn;
-            nn.Neurons.Add(this);
-        }
-        /// <summary>
-        /// Make sure to specify the vals/weights dict/array later! If not, DO NOT use this factory.
-        /// </summary>
-        public Neuron(NeuralNet nn, double cval, int lay, int resolution)
-        {
-            NN = nn; currentVal = cval; layer = lay; NN.Neurons.Add(this);
-            weights = new double[resolution * resolution];
-            biases = new double[resolution * resolution];
-            layWeightBias = new Dictionary<Neuron, double[]>();
-        }
-        public void computeCVal(int[] array)
-        {
-            if (layer == 0)
-            {
-                currentVal = 0;
-                for (int i = 0; i < array.Length; i++)
-                {
-                    currentVal += (array[i] * weights[i]) + biases[i];
-                }
-            }
-            if (layer >= 1)
-            {
-                currentVal = 0;
-                foreach (KeyValuePair<Neuron, double[]> kvp in layWeightBias)
-                {
-                    currentVal += (kvp.Key.currentVal * kvp.Value[0]) + kvp.Value[1];
-                }
-            }
-            //Ensure that the value of the neuron is a percent activation
-            currentVal = Sigmoid.sigmoid(currentVal);
-        }
+        public double value { get; set; }
     }
     class Sigmoid
     {
         public static double sigmoid(double number)
         {
             return 1 / (1 + Math.Pow(Math.E, -number));
+        }
+        public static double sigmoidderiv(double number)
+        {
+            return (sigmoid(number) * (1 - sigmoid(number)));
         }
     }
 }

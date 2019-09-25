@@ -1,96 +1,72 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
 namespace Digits
 {
-    class Data
+    class D
     {
-        public const string weightPath = @"H:\source\repos\Digits\wets.txt";
-        public const string biasPath = @"H:\source\repos\Digits\bias.txt";
-        public static void ReadNs(NeuralNet NN, bool weightorbias, string path, int resolution)
+        const string Path = @"C:\Users\gwflu\Desktop\Test\Digits.txt";
+
+        public static void ReadWeightBias(NN nn)
         {
-            NN.Neurons = new List<Neuron>();
-            FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+            FileStream fs = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.None);
             StreamReader sr = new StreamReader(fs);
-            while (!sr.EndOfStream)
+            string all = sr.ReadToEnd();
+            string[] splitline = all.Split(' ');
+            int iterator = 0;
+            //Read input weights/biases
+            for (int i = 0; i < NN.Count; i++)
             {
-                string line = sr.ReadLine();
-                string[] splitLine = line.Split(' ');
-
-                if (splitLine[0] == "Neuron" && splitLine[1] == "0")
+                for (int ii = 0; ii < NN.Resolution * NN.Resolution; ii++)
                 {
-                    int.TryParse(splitLine[1], out int result);
-                    Neuron n = new Neuron(NN, 0, result, resolution);
-                    line = sr.ReadLine();
-                    splitLine = line.Split(' ');
-                    for (int i = 0; i < resolution; i++)
-                    {                       
-                        try
-                        {
-                            double.TryParse(splitLine[i], out double result2);
-                            if (weightorbias) { n.weights[i] = result2; }
-                            else { n.biases[i] = result2; }
-
-                        }
-                        catch (Exception ex) { Console.WriteLine(ex + "\n" + i.ToString()); }
-                    }
+                    string[] split = splitline[iterator].Split(',');
+                    double.TryParse(split[0], out double weight);
+                    double.TryParse(split[1], out double bias);
+                    nn.InputWeights[i, ii] = weight;
+                    nn.InputBiases[i, ii] = bias;
+                    iterator++;
                 }
-                if (splitLine[0] == "Neuron" && splitLine[1] != "0")
+            }
+            //Read hidden weights/biases
+            for (int i = 0; i < NN.Depth - 2; i++)
+            {
+                for (int ii = 0; ii < NN.Count; ii++)
                 {
-                    Dictionary<Neuron, double> layerwets = new Dictionary<Neuron, double>();
-                    int.TryParse(splitLine[1], out int result);
-                    Neuron n = new Neuron(NN, 0, result, resolution);
-                    int iterator1 = 0;
-                    if (result == 3) { NN.Outputs[iterator1] = n; iterator1++; }
-                    line = sr.ReadLine();
-                    splitLine = line.Split(' ');
-
-                    int iterator = 0;
-                    foreach (Neuron neuron in NN.Neurons)
+                    for (int iii = 0; iii < NN.Count; iii++)
                     {
-                        if (neuron.layer == result - 1)
-                        {
-                            double.TryParse(splitLine[iterator], out double result2);
-                            iterator++;
-                            layerwets.Add(neuron, result2);
-                        }
-                    }
-                    foreach (KeyValuePair<Neuron, double> kvp in layerwets)
-                    {
-                        //May be broken
-                        if (!n.layWeightBias.ContainsKey(kvp.Key)) { n.layWeightBias.Add(kvp.Key, new double[2] { 0, 0 }); }
-                        double[] array = n.layWeightBias[kvp.Key];
-                        if (weightorbias) { array[0] = kvp.Value; }
-                        else { array[1] = kvp.Value; }
+                        string[] split = splitline[iterator].Split(',');
+                        double.TryParse(split[0], out double weight);
+                        double.TryParse(split[1], out double bias);
+                        nn.HiddenWeights[i, ii, iii] = weight;
+                        nn.HiddenBiases[i, ii, iii] = bias;
+                        iterator++;
                     }
                 }
             }
             sr.Close(); fs.Close();
         }
-        public static void WriteNs(NeuralNet NN, bool weightorbias, string path, int resolution)
+        public static void WriteWeightBias(NN nn)
         {
-            FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+            FileStream fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);
             StreamWriter sw = new StreamWriter(fs);
-            foreach (Neuron n in NN.Neurons)
+            //Write input weights/biases
+            for (int i = 0; i < NN.Count; i++)
             {
-                sw.WriteLine("Neuron" + ' ' + n.layer);
-                //if (NN.Outputs.Contains(n)) { sw.Write(' ' + Array.IndexOf(NN.Outputs, n)); }
-                if (n.layer == 0)
+                for (int ii = 0; ii < NN.Resolution * NN.Resolution; ii++)
                 {
-                    for (int i = 0; i < (resolution * resolution); i++)
-                    {
-                        if (weightorbias) { sw.Write((n.weights[i]).ToString() + " "); }
-                        else { sw.Write((n.biases[i].ToString()) + " "); }
-                    }
-                    sw.WriteLine();
+                    sw.Write(nn.InputWeights[i, ii].ToString() + "," + nn.InputBiases[i, ii].ToString() + " ");
                 }
-                else
+            }
+            //Write hidden weights/biases
+            for (int i = 0; i < NN.Depth - 1; i++)
+            {
+                for (int ii = 0; ii < NN.Count; ii++)
                 {
-                    int count = 1;
-                    foreach (KeyValuePair<Neuron, double[]> kvp in n.layWeightBias)
+                    for (int iii = 0; iii < NN.Count; iii++)
                     {
-                        if (weightorbias) { sw.Write((kvp.Value[0]).ToString() + " "); }
-                        else { sw.Write(kvp.Value[1].ToString() + " "); }
-                        count++;
+                        sw.Write(nn.HiddenWeights[i, ii, iii].ToString() + "," + nn.HiddenBiases[i, ii, iii].ToString() + " ");
                     }
-                    sw.WriteLine();
                 }
             }
             sw.Close(); fs.Close();

@@ -6,7 +6,7 @@ namespace Digits
 {
     class D
     {
-        const string Path = @"C:\Users\1135606\source\repos\maybedigits\maybedigits\WBs.txt";
+        const string Path = @"C:\Users\gwflu\Desktop\Test\Digits.txt";
 
         public static void ReadWeightBias(NN nn)
         {
@@ -29,7 +29,7 @@ namespace Digits
                 }
             }
             //Read hidden weights/biases
-            for (int i = 0; i < NN.Depth - 2; i++)
+            for (int i = 0; i < NN.Depth - 1; i++)
             {
                 for (int ii = 0; ii < NN.Count; ii++)
                 {

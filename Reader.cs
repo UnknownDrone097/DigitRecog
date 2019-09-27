@@ -5,15 +5,15 @@ using System.IO;
 
 namespace Digits
 {
-    class Reader
+    public static class Reader
     {
         //Need to check for end of file
-        private readonly string LabelPath = @"H:\Documents\\train-labels-idx1-ubyte";
-        private readonly string ImagePath = @"H:\Documents\train-images-idx3-ubyte";
-        int LabelOffset = 8;
-        int ImageOffset = 16;
-        int Resolution = 28;
-        public int ReadNextLabel()
+        private static string LabelPath = @"C:\Users\gwflu\Desktop\Test\train-labels-idx1-ubyte\train-labels.idx1-ubyte";
+        private static string ImagePath = @"C:\Users\gwflu\Desktop\Test\train-images-idx3-ubyte\train-images.idx3-ubyte";
+        static int LabelOffset = 8;
+        static int ImageOffset = 16;
+        static int Resolution = 28;
+        public static int ReadNextLabel()
         {
             FileStream fs = File.OpenRead(LabelPath);
             fs.Position = LabelOffset;
@@ -26,10 +26,10 @@ namespace Digits
             int[] result = Array.ConvertAll(b, Convert.ToInt32);
             LabelOffset++;
             fs.Close();
-            foreach (int i in result) { return i; }
+            foreach (int i in result) { return i; }           
             return -1;
         }
-        public int[,] ReadNextImage()
+        public static double[,] ReadNextImage()
         {
             //Read image
             FileStream fs = File.OpenRead(ImagePath);
@@ -42,20 +42,37 @@ namespace Digits
             catch { Console.WriteLine("Reset; ImageOffset = " + ImageOffset.ToString()); ImageOffset = 0; }
             int[] array = Array.ConvertAll(b, Convert.ToInt32);
             ImageOffset += Resolution * Resolution;
-            fs.Close();
             //Convert to 2d array
-            int[,] result = new int[Resolution, Resolution];
+            double[,] result = new double[Resolution, Resolution];
+            //Convert array to doubles in result
             for (int i = 0; i < Resolution; i++)
             {
                 for (int ii = 0; ii < Resolution; ii++)
                 {
-                    result[i, ii] = array[(Resolution * i) + ii];
+                    result[i, ii] = (double)array[(Resolution * i) + ii];
                 }
             }
+
+            //Normalize
+            double mean = 0;
+            double stddev = 0;
+            foreach (double d in result) { mean += d; }
+            mean /= result.Length;
+            foreach (double d in result) { stddev += (d - mean) * (d - mean); }
+            stddev /= result.Length;
+            stddev = Math.Sqrt(stddev);
+            for (int i = 0; i < Resolution; i++)
+            {
+                for (int ii = 0; ii < Resolution; ii++)
+                {
+                    result[i, ii] = Sigmoid.sigmoid((result[i, ii] - mean) / stddev);
+                }
+            }
+
             fs.Close();
             return result;
         }
-        public void PrintArray(int[,] a)
+        public static void PrintArray(int[,] a)
         {
             for (int i = 0; i < a.Length; i++)
             {
@@ -65,6 +82,6 @@ namespace Digits
                 }
                 Console.WriteLine();
             }
-        }
+        }      
     }
 }

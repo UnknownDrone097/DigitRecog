@@ -8,14 +8,17 @@ namespace Digits
     public static class Reader
     {
         //Need to check for end of file
-        private static string LabelPath = @"H:\documents\train-labels-idx1-ubyte";
-        private static string ImagePath = @"H:\documents\train-images-idx3-ubyte";
+        private static string LabelPath = @"C:\Users\gwflu\Desktop\Test\train-labels-idx1-ubyte\train-labels.idx1-ubyte";
+        private static string ImagePath = @"C:\Users\gwflu\Desktop\Test\train-images-idx3-ubyte\train-images.idx3-ubyte";
         static int LabelOffset = 8;
         static int ImageOffset = 16;
         static int Resolution = 28;
         public static int ReadNextLabel()
         {
             FileStream fs = File.OpenRead(LabelPath);
+            //Ensure Labeloffset is always under the file size
+            if (!(LabelOffset < fs.Length)) { LabelOffset = 8; }
+
             fs.Position = LabelOffset;
             byte[] b = new byte[1];
             try
@@ -26,13 +29,15 @@ namespace Digits
             int[] result = Array.ConvertAll(b, Convert.ToInt32);
             LabelOffset++;
             fs.Close();
-            foreach (int i in result) { return i; }
+            foreach (int i in result) { return i; }           
             return -1;
         }
         public static double[,] ReadNextImage()
         {
             //Read image
             FileStream fs = File.OpenRead(ImagePath);
+            //Ensure Labeloffset is always under the file size
+            if (!(ImageOffset < fs.Length)) { ImageOffset = 16; }
             fs.Position = ImageOffset;
             byte[] b = new byte[Resolution * Resolution];
             try
@@ -82,6 +87,6 @@ namespace Digits
                 }
                 Console.WriteLine();
             }
-        }
+        }      
     }
 }

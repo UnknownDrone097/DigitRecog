@@ -11,7 +11,7 @@ namespace Digits
         public static int Count = 10;
         public static int OutputCount = 10;
         public static int Resolution = 28;
-        static double LearningRate = 10.0;
+        static double LearningRate = 0.00146;
         static int CurrentIteration = 0;
         static int BatchSize = 100;
         public double AvgGradient = 0;
@@ -154,6 +154,15 @@ namespace Digits
                     }
                 }
             }
+            /*
+            for (int i = 0; i < Depth; i++)
+            {
+                for (int ii = 0; ii < Count; ii++)
+                {
+                    Neurons[i, ii].value = Sigmoid.sigmoid(Neurons[i, ii].value);
+                }
+            }
+            */
             //Normalize these values by layer
             for (int i = 0; i < Depth; i++)
             {
@@ -169,12 +178,14 @@ namespace Digits
             double mean = 0;
             double stddev = 0;
             //Calc mean of data
-            foreach (double d in array) { mean += d; }            
+            foreach (double d in array) { mean += d; }
             mean /= array.Length;
             //Calc std dev of data
             foreach (double d in array) { stddev += (d - mean) * (d - mean); }
             stddev /= Neurons.Length;
             stddev = Math.Sqrt(stddev);
+            //Prevent divide by zero b/c of sigma = 0
+            if (stddev == 0) { stddev = .000001;}
             //Standardize each value with sigmoid of z-score
             for (int i = 0; i < array.Length; i++)
             {
@@ -190,10 +201,11 @@ namespace Digits
                 for (int ii = 0; ii < (Resolution * Resolution); ii++)
                 {
                     //Normalize to [-5, 5]
-                    InputWeights[i, ii] = (double)r.Next(-999, 999);
-                    InputBiases[i, ii] = (double)r.Next(-999, 999);
+                    InputWeights[i, ii] = r.NextDouble() * Math.Sqrt(2 / (double)(Resolution * Resolution));
+                    InputBiases[i, ii] = 0;
                 }
             }
+            /*
             //Calc mean and std devs
             double inputwmean = 0, inputwstddev = 0;
             double inputbmean = 0, inputbstddev = 0;
@@ -216,7 +228,7 @@ namespace Digits
                     InputBiases[i, ii] = Sigmoid.sigmoid((InputBiases[i, ii] - inputbmean) / inputbstddev);
                 }
             }
-
+            */
             //Initialize hidden weights/biases
             for (int i = 0; i < Depth - 1; i++)
             {
@@ -225,12 +237,12 @@ namespace Digits
                     for (int iii = 0; iii < Count; iii++)
                     {
                         //Normalize to [-5, 5]
-                        HiddenWeights[i, ii, iii] = (double)r.Next(-999, 999);
-                        HiddenBiases[i, ii, iii] = (double)r.Next(-999, 999);
+                        HiddenWeights[i, ii, iii] = r.NextDouble() * Math.Sqrt(2/ (double)(Resolution * Resolution));
+                        HiddenBiases[i, ii, iii] = 0;
                     }
                 }
             }
-
+            /*
             double HWmean = 0, HWstd = 0;
             double HBmean = 0, HBstd = 0;
             foreach (double d in HiddenWeights) { HWmean += d; }
@@ -255,7 +267,7 @@ namespace Digits
                     }
                 }
             }
-
+            */
             //Initialize neurons
             for (int i = 0; i < Depth; i++)
             {

@@ -11,7 +11,7 @@ namespace Digits
         public static int Count = 10;
         public static int OutputCount = 10;
         public static int Resolution = 28;
-        static int LearningRate = 1;
+        static double LearningRate = 10.0;
         static int CurrentIteration = 0;
         static int BatchSize = 100;
         public double AvgGradient = 0;
@@ -49,9 +49,9 @@ namespace Digits
             {
                 for (int ii = 0; ii < Resolution * Resolution; ii++)
                 {
-                    InputWeights[i, ii] -= LearningRate * InputWeightGradient[i, ii];
+                    InputWeights[i, ii] += LearningRate * InputWeightGradient[i, ii];
                     AvgGradient += LearningRate * InputWeightGradient[i, ii];
-                    InputBiases[i, ii] -= LearningRate * InputBiasGradient[i, ii];
+                    InputBiases[i, ii] += LearningRate * InputBiasGradient[i, ii];
                 }
             }
             //Hidden layers
@@ -61,9 +61,9 @@ namespace Digits
                 {
                     for (int iii = 0; iii < Count; iii++)
                     {
-                        HiddenWeights[i, ii, iii] -= LearningRate * HiddenWeightGradient[i, ii, iii];
+                        HiddenWeights[i, ii, iii] += LearningRate * HiddenWeightGradient[i, ii, iii];
                         AvgGradient += LearningRate * HiddenWeightGradient[i, ii, iii];
-                        HiddenBiases[i, ii, iii] -= LearningRate * HiddenBiasGradient[i, ii, iii];
+                        HiddenBiases[i, ii, iii] += LearningRate * HiddenBiasGradient[i, ii, iii];
                     }
                 }
             }
@@ -90,6 +90,7 @@ namespace Digits
                                 upperlayerderiv += HiddenWeights[0, i, k] * Sigmoid.sigmoidderiv((InputWeights[i, k] * Neurons[1, i].value) + InputBiases[i, k]) * HiddenWeightGradient[0, i, k];
                             }
                             double zval = (InputWeights[k, j] * image[j / Resolution, j - ((j / Resolution) * Resolution)]) + InputBiases[k, j];
+
                             InputWeightGradient[k, j] = Neurons[l, k].value * Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
                             InputBiasGradient[k, j] = Sigmoid.sigmoidderiv(zval) * upperlayerderiv;
                         }
@@ -168,7 +169,7 @@ namespace Digits
             double mean = 0;
             double stddev = 0;
             //Calc mean of data
-            foreach (double d in array) { mean += d; }
+            foreach (double d in array) { mean += d; }            
             mean /= array.Length;
             //Calc std dev of data
             foreach (double d in array) { stddev += (d - mean) * (d - mean); }
@@ -205,6 +206,7 @@ namespace Digits
             inputbstddev /= InputBiases.Length;
             inputwstddev = Math.Sqrt(inputwstddev);
             inputbstddev = Math.Sqrt(inputbstddev);
+
             //Standardize each value with sigmoid of z-score
             for (int i = 0; i < Count; i++)
             {
@@ -212,7 +214,7 @@ namespace Digits
                 {
                     InputWeights[i, ii] = Sigmoid.sigmoid((InputWeights[i, ii] - inputwmean) / inputwstddev);
                     InputBiases[i, ii] = Sigmoid.sigmoid((InputBiases[i, ii] - inputbmean) / inputbstddev);
-                }              
+                }
             }
 
             //Initialize hidden weights/biases
@@ -240,6 +242,7 @@ namespace Digits
             HBstd /= HiddenBiases.Length;
             HWstd = Math.Sqrt(HWstd);
             HBstd = Math.Sqrt(HBstd);
+
             //Standardize each value with sigmoid of z-score
             for (int i = 0; i < Depth - 1; i++)
             {
@@ -249,7 +252,7 @@ namespace Digits
                     {
                         HiddenWeights[i, ii, iii] = Sigmoid.sigmoid((HiddenWeights[i, ii, iii] - HWmean) / HWstd);
                         HiddenBiases[i, ii, iii] = Sigmoid.sigmoid((HiddenBiases[i, ii, iii] - HBmean) / HBstd);
-                    }                    
+                    }
                 }
             }
 

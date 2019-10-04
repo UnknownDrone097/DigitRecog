@@ -17,7 +17,7 @@ namespace Digits
         public double[,] AvgInputWeightGradient = new double[Count, Resolution * Resolution];
         public double[,,] AvgHiddenWeightGradient = new double[Depth - 1, Count, Count];
         //For the biases
-        public double[,] AvgErrorSignal = new double[Depth, Count];
+        public double[,] AvgErrorSignal = new double[Depth - 1, Count];
         //Error signal
         public double[,] ErrorSignals = new double[Depth, Count];
         //Weights/biases
@@ -127,13 +127,12 @@ namespace Digits
                     //If an output layer
                     if (l == Depth - 1)
                     {
+                        double value = 0;
+                        if (k == correct) { value = 1d; }
+                        ErrorSignals[l, k] = 2 * (value - Outputs[k].value);
                         for (int j = 0; j < Count; j++)
                         {
                             double zval = (HiddenWeights[l - 1, k, j] * Neurons[l - 1, j].value);
-
-                            int value = 0;
-                            if (j == correct) { value = 1; }
-                            ErrorSignals[l, k] = 2 * (value - Outputs[j].value);
                             //Formulas
                             HiddenWeightGradient[l - 1, k, j] = Neurons[l - 1, j].value * Sigmoid.sigmoidderiv(zval) * ErrorSignals[l, k];
                         }
@@ -192,11 +191,15 @@ namespace Digits
             //Normalize these values by layer
             for (int i = 0; i < Depth; i++)
             {
+                
                 double[] array = new double[Count];
                 for (int ii = 0; ii < Count; ii++) { array[ii] = Neurons[i, ii].value; }
                 Normalize(array);
                 //This may be redundant b/c of pass by reference
-                for (int ii = 0; ii < Count; ii++) { Neurons[i, ii].value = array[ii]; }
+                for (int ii = 0; ii < Count; ii++) { Neurons[i, ii].value = Sigmoid.sigmoid(array[ii]); }
+                
+                //Sigmoid
+                //for (int ii = 0; ii < Count; ii++) { Neurons[i, ii].value = Sigmoid.sigmoid(Neurons[i, ii].value); }
             }
         }
         public void Normalize(double[] array)
@@ -226,7 +229,6 @@ namespace Digits
             {
                 for (int ii = 0; ii < (Resolution * Resolution); ii++)
                 {
-                    //Normalize to [-5, 5]
                     InputWeights[i, ii] = r.NextDouble() * Math.Sqrt(2 / (double)(Resolution * Resolution));
                 }
             }
@@ -235,11 +237,11 @@ namespace Digits
             {
                 for (int ii = 0; ii < Count; ii++)
                 {
-                    Biases[i, ii] = r.NextDouble() * Math.Sqrt(2 / (double)(Resolution * Resolution));
+                    Biases[i, ii] = r.NextDouble() * Math.Sqrt(2 / NN.Count);
                     for (int iii = 0; iii < Count; iii++)
                     {
                         //Normalize to [-5, 5]
-                        HiddenWeights[i, ii, iii] = r.NextDouble() * Math.Sqrt(2 / (double)(Resolution * Resolution));
+                        HiddenWeights[i, ii, iii] = r.NextDouble() * Math.Sqrt(2 / NN.Count);
                     }
                 }
             }

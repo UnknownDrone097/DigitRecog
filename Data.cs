@@ -6,10 +6,12 @@ namespace Digits
 {
     class D
     {
-        const string Path = @"H:\Documents\wbs.txt";
-
+        const string Path = @"C:\Users\gwflu\Desktop\data.txt";
+        static bool Running = false;
         public static void ReadWeightBias(NN nn)
         {
+            if (Running == true) { throw new Exception("Already accessing file"); }
+            Running = true;
             FileStream fs = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.None);
             StreamReader sr = new StreamReader(fs);
             string all = sr.ReadToEnd();
@@ -49,9 +51,12 @@ namespace Digits
                 }
             }
             sr.Close(); fs.Close();
+            Running = false;
         }
         public static void WriteWeightBias(NN nn)
         {
+            if (Running == true) { throw new Exception("Already accessing file"); }
+            Running = true;
             FileStream fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);
             StreamWriter sw = new StreamWriter(fs);
             //Write input weights
@@ -82,6 +87,7 @@ namespace Digits
                 }
             }
             sw.Close(); fs.Close();
+            Running = false;
         }
     }
 }

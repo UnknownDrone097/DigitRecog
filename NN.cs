@@ -11,19 +11,22 @@ namespace Digits
         public static int Count = 10;
         public static int OutputCount = 10;
         public static int Resolution = 28;
-        static double LearningRate = 0.00146;
         public double AvgGradient = 0;
+        //Hyperparameters
+        static double LearningRate = 0.00008;
+        static double DropoutRate = .2;
         //Overall gradients
         public double[,] AvgInputWeightGradient = new double[Count, Resolution * Resolution];
         public double[,,] AvgHiddenWeightGradient = new double[Depth - 1, Count, Count];
         //For the biases
-        public double[,] AvgErrorSignal = new double[Depth - 1, Count];
+        public double[,] AvgBiasGradient = new double[Depth - 1, Count];
         //Error signal
         public double[,] ErrorSignals = new double[Depth, Count];
         //Weights/biases
         public double[,] InputWeights = new double[Count, Resolution * Resolution];
         public double[,,] HiddenWeights = new double[Depth - 1, Count, Count];
         public double[,] Biases = new double[Depth - 1, Count];
+        public double[,] Zvals = new double[Depth, Count];
         //Gradients
         public double[,] InputWeightGradient = new double[Count, Resolution * Resolution];
         public double[,,] HiddenWeightGradient = new double[Depth - 1, Count, Count];
@@ -52,8 +55,8 @@ namespace Digits
             {
                 for (int ii = 0; ii < Resolution * Resolution; ii++)
                 {
-                    InputWeights[i, ii] -= LearningRate * InputWeightGradient[i, ii] * (-2 / (double)batchsize);
-                    AvgGradient -= LearningRate * InputWeightGradient[i, ii] * (-2 / (double)batchsize);
+                    InputWeights[i, ii] -= LearningRate * AvgInputWeightGradient[i, ii] * (-2 / (double)batchsize);
+                    AvgGradient -= LearningRate * AvgInputWeightGradient[i, ii] * (-2 / (double)batchsize);
                 }
             }
             //Hidden layers
@@ -63,10 +66,10 @@ namespace Digits
                 {
                     for (int iii = 0; iii < Count; iii++)
                     {
-                        HiddenWeights[i, ii, iii] -= LearningRate * HiddenWeightGradient[i, ii, iii] * (-2 / (double)batchsize);
-                        AvgGradient -= LearningRate * HiddenWeightGradient[i, ii, iii] * (-2 / (double)batchsize);
+                        HiddenWeights[i, ii, iii] -= LearningRate * AvgHiddenWeightGradient[i, ii, iii] * (-2 / (double)batchsize);
+                        AvgGradient -= LearningRate * AvgHiddenWeightGradient[i, ii, iii] * (-2 / (double)batchsize);
                     }
-                    Biases[i, ii] -= AvgErrorSignal[i, ii] * (-2 / (double)batchsize);
+                    Biases[i, ii] -= LearningRate * AvgBiasGradient[i, ii] * (-2 / (double)batchsize);
                 }
             }
             AvgGradient /= HiddenWeightGradient.Length + InputWeightGradient.Length;
@@ -90,7 +93,7 @@ namespace Digits
                     {
                         AvgHiddenWeightGradient[i, ii, iii] += HiddenWeightGradient[i, ii, iii];
                     }
-                    AvgErrorSignal[i, ii] += ErrorSignals[i, ii];
+                    AvgBiasGradient[i, ii] += ErrorSignals[i, ii] * ActivationFunctions.Sigmoid(Zvals[i, ii]);
                 }
             }
         }
@@ -98,63 +101,88 @@ namespace Digits
         {
             //Run NN on image
             calculate(image);
+            //Reset temp gradients
+            ErrorSignals = new double[Depth, Count];
+            HiddenWeightGradient = new double[Depth - 1, Count, Count];
+            InputWeightGradient = new double[Count, Resolution * Resolution];
 
-            //Foreach weight/bias
+            //Foreach layer
             for (int l = Depth - 1; l >= 0; l--)
             {
+                //Calculate error signals
+                //Foreach ending neuron
+                for (int k = 0; k < Count; k++)
+                {
+                    double upperlayerderiv = 0;
+                    //Input neurons
+                    if (l == 0)
+                    {
+                        //Foreach starting neuron
+                        for (int j = 0; j < Count; j++)
+                        {
+                            //How does this equal zero?
+                            upperlayerderiv += HiddenWeights[1, j, k] * ActivationFunctions.Sigmoid(Zvals[l + 1, j]) * ErrorSignals[1, j];
+                        }
+                    }
+                    //Hidden neurons
+                    if (l != 0 && l < Depth - 1)
+                    {
+                        //Foreach starting neuron
+                        for (int j = 0; j < Count; j++)
+                        {
+                            //Hiddenweights uses l because the formula's l + 1 is l due to a lack of input layer in this array
+                            upperlayerderiv += HiddenWeights[l, j, k] * ActivationFunctions.Sigmoid(Zvals[l + 1, j]) * ErrorSignals[l + 1, j];
+                        }
+                    }
+                    //Output neurons
+                    if (l == Depth - 1)
+                    {
+                        upperlayerderiv = 2d * ((k == correct ? 1d : 0d) - Outputs[k].value);
+                    }
+                    ErrorSignals[l, k] = upperlayerderiv;
+                }
+
                 //If an input layer
                 if (l == 0)
                 {
+                    
+                    //foreach starting neuron
                     for (int k = 0; k < Count; k++)
                     {
+                        //foreach ending neuron
                         for (int j = 0; j < Resolution * Resolution; j++)
                         {
-                            double upperlayerderiv = 0;
-                            for (int i = 0; i < Count; i++)
-                            {
-                                upperlayerderiv += HiddenWeights[0, i, k] * Sigmoid.sigmoidderiv((InputWeights[i, k] * Neurons[1, i].value) + Biases[l + 1, k]) * ErrorSignals[l + 1, k];
-                            }
-                            ErrorSignals[l, k] = upperlayerderiv;
-                            double zval = (InputWeights[k, j] * image[j / Resolution, j - ((j / Resolution) * Resolution)]) + Biases[l, k];
-
-                            InputWeightGradient[k, j] = image[j / Resolution, j - ((j / Resolution) * Resolution)] * Sigmoid.sigmoidderiv(zval) * ErrorSignals[l, k];
+                            InputWeightGradient[k, j] = image[j / Resolution, j - ((j / Resolution) * Resolution)] * ActivationFunctions.Sigmoid(Zvals[l, k]) * ErrorSignals[l, k];
                         }
                     }
                     continue;
                 }
+                //foreach starting neuron
                 for (int k = 0; k < Count; k++)
                 {
                     //If an output layer
+                    //Foreach ending neuron
                     if (l == Depth - 1)
                     {
-                        double value = 0;
-                        if (k == correct) { value = 1d; }
-                        ErrorSignals[l, k] = 2 * (value - Outputs[k].value);
                         for (int j = 0; j < Count; j++)
                         {
-                            double zval = (HiddenWeights[l - 1, k, j] * Neurons[l - 1, j].value);
-                            //Formulas
-                            HiddenWeightGradient[l - 1, k, j] = Neurons[l - 1, j].value * Sigmoid.sigmoidderiv(zval) * ErrorSignals[l, k];
+                            HiddenWeightGradient[l - 1, k, j] = Neurons[l - 1, j].value * ActivationFunctions.Sigmoid(Zvals[l, k]) * ErrorSignals[l, k];
                         }
                         continue;
                     }
-                    //If a hidden layer
+                    //If hidden layer
+                    //Foreach ending neuron
                     for (int j = 0; j < Count; j++)
                     {
-                        double upperlayerderiv = 0;
-                        for (int i = 0; i < Count; i++)
-                        {
-                            upperlayerderiv += HiddenWeights[l, i, k] * Sigmoid.sigmoidderiv(HiddenWeights[l, i, k] * Neurons[l, i].value) * ErrorSignals[l + 1, k];
-                        }
-                        ErrorSignals[l, k] = upperlayerderiv;
-                        double zval = (HiddenWeights[l - 1, k, j] * Neurons[l - 1, j].value) + Biases[l, k];
-                        HiddenWeightGradient[l - 1, k, j] = Neurons[l - 1, j].value * Sigmoid.sigmoidderiv(zval) * ErrorSignals[l, k];
+                        HiddenWeightGradient[l - 1, k, j] = Neurons[l - 1, j].value * ActivationFunctions.Sigmoid(Zvals[l, k]) * ErrorSignals[l, k];
                     }
                 }
             }
         }
         public void calculate(double[,] image)
         {
+            Zvals = new double[Depth, Count];
+            Random r = new Random();
             for (int l = 0; l < Depth; l++)
             {
                 for (int k = 0; k < Count; k++)
@@ -164,7 +192,7 @@ namespace Digits
                     {
                         for (int j = 0; j < (Resolution * Resolution); j++)
                         {
-                            Neurons[0, k].value += (InputWeights[k, j] * image[j / Resolution, j - ((j / Resolution) * Resolution)]) + Biases[l, k];
+                            Zvals[0, k] += (InputWeights[k, j] * image[j / Resolution, j - ((j / Resolution) * Resolution)]) + Biases[l, k];
                         }
                     }
                     //Calc hidden layers
@@ -172,53 +200,24 @@ namespace Digits
                     {
                         for (int j = 0; j < Count; j++)
                         {
-                            double bias;
+                            double bias; 
                             if (l == Depth - 1) { bias = 0; } else { bias = Biases[l, k]; }
-                            Neurons[l, k].value += (HiddenWeights[l - 1, k, j] * Neurons[l - 1, j].value) + bias;
+                            //if (l == Depth - 2) { dropout = (r.NextDouble() <= DropoutRate ? 0 : 1); } else { dropout = 1; }
+                            Zvals[l, k] += ((HiddenWeights[l - 1, k, j] * Zvals[l - 1, j]) + bias);
                         }
                     }
                 }
             }
-            /*
-            for (int i = 0; i < Depth; i++)
+            //Normalize zvals
+            //Zvals = ActivationFunctions.Normalize(Zvals, Depth, Count);
+            //Standardize and set values
+            for (int l = 0; l < Depth; l++)
             {
                 for (int ii = 0; ii < Count; ii++)
                 {
-                    Neurons[i, ii].value = Sigmoid.sigmoid(Neurons[i, ii].value);
+                    if (l < Depth - 1) { Neurons[l, ii].value = ActivationFunctions.Softplus(Zvals[l, ii]); continue; }
+                    Neurons[l, ii].value = Zvals[l, ii];
                 }
-            }
-            */
-            //Normalize these values by layer
-            for (int i = 0; i < Depth; i++)
-            {
-                
-                double[] array = new double[Count];
-                for (int ii = 0; ii < Count; ii++) { array[ii] = Neurons[i, ii].value; }
-                Normalize(array);
-                //This may be redundant b/c of pass by reference
-                for (int ii = 0; ii < Count; ii++) { Neurons[i, ii].value = Sigmoid.sigmoid(array[ii]); }
-                
-                //Sigmoid
-                //for (int ii = 0; ii < Count; ii++) { Neurons[i, ii].value = Sigmoid.sigmoid(Neurons[i, ii].value); }
-            }
-        }
-        public void Normalize(double[] array)
-        {
-            double mean = 0;
-            double stddev = 0;
-            //Calc mean of data
-            foreach (double d in array) { mean += d; }
-            mean /= array.Length;
-            //Calc std dev of data
-            foreach (double d in array) { stddev += (d - mean) * (d - mean); }
-            stddev /= Neurons.Length;
-            stddev = Math.Sqrt(stddev);
-            //Prevent divide by zero b/c of sigma = 0
-            if (stddev == 0) { stddev = .000001; }
-            //Standardize each value with sigmoid of z-score
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = Sigmoid.sigmoid((array[i] - mean) / stddev);
             }
         }
         public void initialize()
@@ -229,7 +228,8 @@ namespace Digits
             {
                 for (int ii = 0; ii < (Resolution * Resolution); ii++)
                 {
-                    InputWeights[i, ii] = r.NextDouble() * Math.Sqrt(2 / (double)(Resolution * Resolution));
+                    //Lecun initialization (draw a rand num from neg limit to pos limit where lim is the sqrt term)
+                    InputWeights[i, ii] = (r.NextDouble() > .5 ? -1 : 1) * r.NextDouble() * Math.Sqrt(3d / (double)(Resolution * Resolution));
                 }
             }
             //Initialize hidden weights and all biases
@@ -237,22 +237,12 @@ namespace Digits
             {
                 for (int ii = 0; ii < Count; ii++)
                 {
-                    Biases[i, ii] = r.NextDouble() * Math.Sqrt(2 / NN.Count);
+                    Biases[i, ii] = 0;
                     for (int iii = 0; iii < Count; iii++)
                     {
-                        //Normalize to [-5, 5]
-                        HiddenWeights[i, ii, iii] = r.NextDouble() * Math.Sqrt(2 / NN.Count);
+                        //Lecun initialization (draw a rand num from neg limit to pos limit where lim is the sqrt term)
+                        HiddenWeights[i, ii, iii] = (r.NextDouble() > .5 ? -1 : 1) * r.NextDouble() * Math.Sqrt(3d / (NN.Count * NN.Count));
                     }
-                }
-            }
-            //Initialize neurons
-            for (int i = 0; i < Depth; i++)
-            {
-                for (int ii = 0; ii < Count; ii++)
-                {
-                    N n = new N();
-                    Neurons[i, ii] = n;
-                    if (i == Depth - 1) { Outputs[ii] = n; }
                 }
             }
         }
@@ -297,15 +287,57 @@ namespace Digits
     {
         public double value { get; set; }
     }
-    class Sigmoid
+    class ActivationFunctions
     {
-        public static double sigmoid(double number)
+        public static double Softplus(double number)
+        {
+            double num = Math.Log(1 + Math.Pow(Math.E, number));
+            if (num < 0) { num = 0; }
+            if (double.IsNaN(num)) { Console.WriteLine("nan"); }
+            return num;
+        }
+        //Derrivative of the softplus
+        public static double Sigmoid(double number)
         {
             return 1 / (1 + Math.Pow(Math.E, -number));
         }
-        public static double sigmoidderiv(double number)
+
+        public static double[] Normalize(double[] array)
         {
-            return (sigmoid(number) * (1 - sigmoid(number)));
+            double mean = 0;
+            double stddev = 0;
+            //Calc mean of data
+            foreach (double d in array) { mean += d; }
+            mean /= array.Length;
+            //Calc std dev of data
+            foreach (double d in array) { stddev += (d - mean) * (d - mean); }
+            stddev /= array.Length;
+            stddev = Math.Sqrt(stddev);
+            //Prevent divide by zero b/c of sigma = 0
+            if (stddev == 0) { stddev = .000001; }
+            //Calc zscore
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = (array[i] - mean) / stddev;
+            }
+            return array;
+        }
+        public static double[,] Normalize(double[,] array, int depth, int count)
+        {
+            for (int i = 0; i < depth; i++)
+            {
+                double[] smallarray = new double[count];
+                for (int ii = 0; ii < count; ii++)
+                {
+                    smallarray[ii] = array[i, ii];
+                }
+                smallarray = Normalize(smallarray);
+                for (int ii = 0; ii < count; ii++)
+                {
+                    array[i, ii] = smallarray[ii];
+                }
+            }
+            return array;
         }
     }
 }

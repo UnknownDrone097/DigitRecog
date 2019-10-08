@@ -56,23 +56,8 @@ namespace Digits
                     result[i, ii] = (double)array[(Resolution * i) + ii];
                 }
             }
-
-            //Normalize
-            double mean = 0;
-            double stddev = 0;
-            foreach (double d in result) { mean += d; }
-            mean /= result.Length;
-            foreach (double d in result) { stddev += (d - mean) * (d - mean); }
-            stddev /= result.Length;
-            stddev = Math.Sqrt(stddev);
-            for (int i = 0; i < Resolution; i++)
-            {
-                for (int ii = 0; ii < Resolution; ii++)
-                {
-                    result[i, ii] = Sigmoid.sigmoid((result[i, ii] - mean) / stddev);
-                }
-            }
-
+            ActivationFunctions.Normalize(result, Resolution, Resolution);
+            
             fs.Close();
             return result;
         }

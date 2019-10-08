@@ -13,8 +13,9 @@ namespace Digits
         public static int Resolution = 28;
         public double AvgGradient = 0;
         //Hyperparameters
-        static double LearningRate = 0.00008;
-        static double DropoutRate = .2;
+        static double LearningRate = 0.000146;
+        static double Momentum = .5;
+        double Velocity { get; set; }
         //Overall gradients
         public double[,] AvgInputWeightGradient = new double[Count, Resolution * Resolution];
         public double[,,] AvgHiddenWeightGradient = new double[Depth - 1, Count, Count];
@@ -73,6 +74,9 @@ namespace Digits
                 }
             }
             AvgGradient /= HiddenWeightGradient.Length + InputWeightGradient.Length;
+            //Nesterov momentum
+            double XAhead = AvgGradient + (Momentum * Velocity);
+            Velocity = (Velocity * Momentum) - (LearningRate * XAhead);
         }
         public void Descend()
         {
@@ -105,6 +109,7 @@ namespace Digits
             ErrorSignals = new double[Depth, Count];
             HiddenWeightGradient = new double[Depth - 1, Count, Count];
             InputWeightGradient = new double[Count, Resolution * Resolution];
+            Zvals = new double[Depth, Count];
 
             //Foreach layer
             for (int l = Depth - 1; l >= 0; l--)
@@ -145,7 +150,7 @@ namespace Digits
                 //If an input layer
                 if (l == 0)
                 {
-                    
+
                     //foreach starting neuron
                     for (int k = 0; k < Count; k++)
                     {
@@ -178,6 +183,9 @@ namespace Digits
                     }
                 }
             }
+            HiddenWeightGradient = ActivationFunctions.Normalize(HiddenWeightGradient, Depth - 1, Count, Count);
+            InputWeightGradient = ActivationFunctions.Normalize(InputWeightGradient, Count, Resolution * Resolution);
+            ErrorSignals = ActivationFunctions.Normalize(ErrorSignals, Depth, Count);
         }
         public void calculate(double[,] image)
         {
@@ -200,7 +208,7 @@ namespace Digits
                     {
                         for (int j = 0; j < Count; j++)
                         {
-                            double bias; 
+                            double bias;
                             if (l == Depth - 1) { bias = 0; } else { bias = Biases[l, k]; }
                             //if (l == Depth - 2) { dropout = (r.NextDouble() <= DropoutRate ? 0 : 1); } else { dropout = 1; }
                             Zvals[l, k] += ((HiddenWeights[l - 1, k, j] * Zvals[l - 1, j]) + bias);
@@ -215,8 +223,8 @@ namespace Digits
             {
                 for (int ii = 0; ii < Count; ii++)
                 {
-                    if (l < Depth - 1) { Neurons[l, ii].value = ActivationFunctions.Softplus(Zvals[l, ii]); continue; }
-                    Neurons[l, ii].value = Zvals[l, ii];
+                    if (l < Depth - 1) { Neurons[l, ii].value = ActivationFunctions.Softplus(Zvals[l, ii]) + Velocity; continue; }
+                    Neurons[l, ii].value = Zvals[l, ii] + Velocity;
                 }
             }
         }
@@ -301,7 +309,7 @@ namespace Digits
         {
             return 1 / (1 + Math.Pow(Math.E, -number));
         }
-
+        //Currently no clipping, may want to add eventually?
         public static double[] Normalize(double[] array)
         {
             double mean = 0;
@@ -324,17 +332,54 @@ namespace Digits
         }
         public static double[,] Normalize(double[,] array, int depth, int count)
         {
+            double[] smallarray = new double[depth * count];
+            int iterator = 0;
             for (int i = 0; i < depth; i++)
             {
-                double[] smallarray = new double[count];
                 for (int ii = 0; ii < count; ii++)
                 {
-                    smallarray[ii] = array[i, ii];
+                    smallarray[iterator] = array[i, ii];
+                    iterator++;
                 }
-                smallarray = Normalize(smallarray);
+            }
+            smallarray = Normalize(smallarray);
+            iterator = 0;
+            for (int i = 0; i < depth; i++)
+            {
                 for (int ii = 0; ii < count; ii++)
                 {
-                    array[i, ii] = smallarray[ii];
+                    array[i, ii] = smallarray[iterator];
+                    iterator++;
+                }
+            }
+            return array;
+        }
+        public static double[,,] Normalize(double[,,] array, int depth, int count1, int count2)
+        {
+            double[] workingvalues = new double[depth * count1 * count2];
+            int iterator = 0;
+            for (int i = 0; i < depth; i++)
+            {
+                for (int ii = 0; ii < count1; ii++)
+                {
+                    for (int iii = 0; iii < count2; iii++)
+                    {
+                        workingvalues[iterator] = array[i, ii, iii];
+                        iterator++;
+                    }
+                }
+            }
+            workingvalues = Normalize(workingvalues);
+            iterator = 0;
+            for (int i = 0; i < depth; i++)
+            {
+                for (int ii = 0; ii < count1; ii++)
+                {
+                    for (int iii = 0; iii < count2; iii++)
+                    {
+                        array[i, ii, iii] = workingvalues[iterator];
+                        iterator++;
+                    }
                 }
             }
             return array;

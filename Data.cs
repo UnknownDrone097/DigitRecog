@@ -6,7 +6,7 @@ namespace Digits
 {
     class D
     {
-        const string Path = @"C:\Users\gwflu\Desktop\data.txt";
+        const string Path = @"H:\Documents\wbs.txt";
         static bool Running = false;
         public static void ReadWeightBias(NN nn)
         {

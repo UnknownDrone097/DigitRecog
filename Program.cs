@@ -7,28 +7,36 @@ namespace Digits
     {
         static void Main(string[] args)
         {
-            while (true)
+            while (!active.finished)
             {
                 if (!active.isrunning)
                 {
+                    active.isrunning = true;
+                    //active.reset();
                     active.program();
                 }
             }
+            Console.WriteLine("Finished");
         }
-
     }
     class active
     {
         public static bool isrunning = false;
-        static float avg = 1;
-        static double avgerror = 0;
-        static int batchsize = 1;
+        public static bool finished = false;
+        static double avg = 1;
+        static double maxavg = 0;
+        static double avgerror = 1;
+        static int batchsize = 10;
+        static double iterator = 1;
+        public static void reset()
+        {
+            NN nn = new NN();
+            nn.initialize();
+            D.WriteWeightBias(nn);
+        }
         public static void program()
         {
-            isrunning = true;
             NN nn = new NN();
-            //nn.initialize();
-            //D.WriteWeightBias(nn);
             D.ReadWeightBias(nn);
             for (int i = 0; i < batchsize - 1; i++)
             {
@@ -46,13 +54,17 @@ namespace Digits
             double error = 0;
             for (int i = 0; i < NN.Count; i++)
             {
-                error += ((i == correct ? 1 : 0) - nn.Outputs[i].value) * ((i == correct ? 1 : 0) - nn.Outputs[i].value);
+                error += ((i == correct ? 1d : 0d) - nn.Outputs[i].value) * ((i == correct ? 1d : 0d) - nn.Outputs[i].value);
             }
-            avgerror = (.99 * avgerror) + (.01 * error);
-            avg = (float)(avg * .99) + ((guess == correct) ? (float).01 : 0);
+            avgerror = ((iterator / (iterator + 1)) * avgerror) + ((1 / iterator) * error);
+            avg = (avg * (iterator / (iterator + 1))) + ((guess == correct) ? (1 / iterator) : 0d);
+            if (avgerror > maxavg && iterator > 300) { maxavg = avgerror; }
+            if (avgerror > maxavg * 10 && iterator > 300) { finished = true; }
             Console.WriteLine("Correct: " + correct + " Guess: " + guess + " Correct? " + (guess == correct ? "1 " : "0 ") + "Certainty: " + Math.Round(certainty, 5).ToString().PadRight(7)
-                + " % Correct: " + Math.Round(avg, 5).ToString().PadRight(7) + " Avg error: " + Math.Round(avgerror, 5) + " Avg gradient: " + Math.Round(nn.AvgGradient, 15));
+                + " %Correct: " + Math.Round(avg, 5).ToString().PadRight(7) + " Avg error: " + Math.Round(avgerror, 5).ToString().PadRight(8) + " Avg gradient: " + Math.Round(nn.AvgGradient, 15));
             nn.Dispose();
+            iterator++;
+            if (iterator > 1000) { iterator = 100; }
             isrunning = false;
         }
     }

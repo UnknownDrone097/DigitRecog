@@ -7,8 +7,8 @@ namespace Digits
 {
     public static class Reader
     {
-        private static string LabelPath = @"C:\Users\gwflu\Desktop\Test\train-labels-idx1-ubyte\train-labels.idx1-ubyte";
-        private static string ImagePath = @"C:\Users\gwflu\Desktop\Test\train-images-idx3-ubyte\train-images.idx3-ubyte";
+        private static string LabelPath = @"H:\Documents\train-labels-idx1-ubyte";
+        private static string ImagePath = @"H:\Documents\train-images-idx3-ubyte";
         static int LabelOffset = 8;
         static int ImageOffset = 16;
         static int Resolution = 28;
@@ -57,7 +57,7 @@ namespace Digits
                 }
             }
             ActivationFunctions.Normalize(result, Resolution, Resolution);
-            
+
             fs.Close();
             return result;
         }

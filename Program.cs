@@ -26,7 +26,7 @@ namespace Digits
         static double avg = 1;
         static double maxavg = 0;
         static double avgerror = 1;
-        static int batchsize = 10;
+        static int batchsize = 5;
         static double iterator = 1;
         public static void reset()
         {
@@ -61,7 +61,7 @@ namespace Digits
             if (avgerror > maxavg && iterator > 300) { maxavg = avgerror; }
             if (avgerror > maxavg * 10 && iterator > 300) { finished = true; }
             Console.WriteLine("Correct: " + correct + " Guess: " + guess + " Correct? " + (guess == correct ? "1 " : "0 ") + "Certainty: " + Math.Round(certainty, 5).ToString().PadRight(7)
-                + " %Correct: " + Math.Round(avg, 5).ToString().PadRight(7) + " Avg error: " + Math.Round(avgerror, 5).ToString().PadRight(8) + " Avg gradient: " + Math.Round(nn.AvgGradient, 15));
+                + " %Correct: " + Math.Round(avg, 5).ToString().PadRight(7) + " Avg error: " + Math.Round(avgerror, 5).ToString().PadRight(8) + " Avg gradient: " + nn.AvgGradient, 15);
             nn.Dispose();
             iterator++;
             if (iterator > 1000) { iterator = 100; }

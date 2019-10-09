@@ -7,16 +7,16 @@ namespace Digits
 {
     public static class Reader
     {
-        private static string LabelPath = @"H:\Documents\train-labels-idx1-ubyte";
-        private static string ImagePath = @"H:\Documents\train-images-idx3-ubyte";
+        private static string LabelPath = @"C:\Users\gwflu\Desktop\Test\train-labels-idx1-ubyte\train-labels.idx1-ubyte";
+        private static string ImagePath = @"C:\Users\gwflu\Desktop\Test\train-images-idx3-ubyte\train-images.idx3-ubyte";
         static int LabelOffset = 8;
         static int ImageOffset = 16;
         static int Resolution = 28;
         public static int ReadNextLabel()
         {
             FileStream fs = File.OpenRead(LabelPath);
-            //Ensure Labeloffset is always under the file size
-            if (!(LabelOffset < fs.Length)) { LabelOffset = 8; }
+            //Reset parameters and decrement NN hyperparameters upon new epoch
+            if (!(LabelOffset < fs.Length)) { LabelOffset = 8; ImageOffset = 16; NN.LearningRate *= .6666; NN.Momentum *= .6666; }
 
             fs.Position = LabelOffset;
             byte[] b = new byte[1];
@@ -24,7 +24,7 @@ namespace Digits
             {
                 fs.Read(b, 0, 1);
             }
-            catch { Console.WriteLine("Reset; ImageOffset = " + LabelOffset.ToString()); LabelOffset = 0; }
+            catch (Exception ex) { Console.WriteLine("Reader exception: " + ex.ToString()); Console.ReadLine(); }
             int[] result = Array.ConvertAll(b, Convert.ToInt32);
             LabelOffset++;
             fs.Close();
@@ -35,15 +35,15 @@ namespace Digits
         {
             //Read image
             FileStream fs = File.OpenRead(ImagePath);
-            //Ensure Labeloffset is always under the file size
-            if (!(ImageOffset < fs.Length)) { ImageOffset = 16; }
+            //Reset parameters and decrement NN hyperparameters upon new epoch
+            if (!(ImageOffset < fs.Length)) { ImageOffset = 16; LabelOffset = 8; NN.LearningRate *= .6666; NN.Momentum *= .6666; }
             fs.Position = ImageOffset;
             byte[] b = new byte[Resolution * Resolution];
             try
             {
                 fs.Read(b, 0, Resolution * Resolution);
             }
-            catch { Console.WriteLine("Reset; ImageOffset = " + ImageOffset.ToString()); ImageOffset = 0; }
+            catch (Exception ex) { Console.WriteLine("Reader exception: " + ex.ToString()); Console.ReadLine(); }
             int[] array = Array.ConvertAll(b, Convert.ToInt32);
             ImageOffset += Resolution * Resolution;
             //Convert to 2d array

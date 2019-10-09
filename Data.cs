@@ -6,7 +6,7 @@ namespace Digits
 {
     class D
     {
-        const string Path = @"H:\Documents\wbs.txt";
+        const string Path = @"C:\Users\gwflu\Desktop\Test\Data.txt";
         static bool Running = false;
         public static void ReadWeightBias(NN nn)
         {
@@ -18,7 +18,7 @@ namespace Digits
             string[] splitline = all.Split(' ');
             int iterator = 0;
             //Read input weights
-            for (int i = 0; i < NN.Count; i++)
+            for (int i = 0; i < NN.InputCount; i++)
             {
                 for (int ii = 0; ii < NN.Resolution * NN.Resolution; ii++)
                 {
@@ -28,11 +28,11 @@ namespace Digits
                 }
             }
             //Read hidden weights
-            for (int i = 0; i < NN.Depth - 1; i++)
+            for (int i = 0; i < NN.HiddenDepth; i++)
             {
-                for (int ii = 0; ii < NN.Count; ii++)
+                for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
-                    for (int iii = 0; iii < NN.Count; iii++)
+                    for (int iii = 0; iii < NN.InputCount; iii++)
                     {
                         double.TryParse(splitline[iterator], out double weight);
                         nn.HiddenWeights[i, ii, iii] = weight;
@@ -40,13 +40,30 @@ namespace Digits
                     }
                 }
             }
-            //Read biases
-            for (int i = 0; i < NN.Depth - 1; i++)
+            //Read output weights
+            for (int i = 0; i < NN.OutputCount; i++)
             {
-                for (int ii = 0; ii < NN.Count; ii++)
+                for (int ii = 0; ii < NN.HiddenCount; ii++)
+                {
+                    double.TryParse(splitline[iterator], out double weight);
+                    nn.OutputWeights[i, ii] = weight;
+                    iterator++;
+                }
+            }
+            //Read input biases
+            for (int i = 0; i < NN.InputCount; i++)
+            {
+                double.TryParse(splitline[iterator], out double bias);
+                nn.InputBiases[i] = bias;
+                iterator++;
+            }
+            //Read hidden biases
+            for (int i = 0; i < NN.HiddenDepth; i++)
+            {
+                for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
                     double.TryParse(splitline[iterator], out double bias);
-                    nn.Biases[i, ii] = bias;
+                    nn.HiddenBiases[i, ii] = bias;
                     iterator++;
                 }
             }
@@ -60,7 +77,7 @@ namespace Digits
             FileStream fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);
             StreamWriter sw = new StreamWriter(fs);
             //Write input weights
-            for (int i = 0; i < NN.Count; i++)
+            for (int i = 0; i < NN.InputCount; i++)
             {
                 for (int ii = 0; ii < NN.Resolution * NN.Resolution; ii++)
                 {
@@ -68,22 +85,35 @@ namespace Digits
                 }
             }
             //Write hidden weights
-            for (int i = 0; i < NN.Depth - 1; i++)
+            for (int i = 0; i < NN.HiddenDepth; i++)
             {
-                for (int ii = 0; ii < NN.Count; ii++)
+                for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
-                    for (int iii = 0; iii < NN.Count; iii++)
+                    for (int iii = 0; iii < NN.InputCount; iii++)
                     {
                         sw.Write(nn.HiddenWeights[i, ii, iii].ToString() + " ");
                     }
                 }
             }
-            //Write biases
-            for (int i = 0; i < NN.Depth - 1; i++)
+            //Write output weights
+            for (int i = 0; i < NN.OutputCount; i++)
             {
-                for (int ii = 0; ii < NN.Count; ii++)
+                for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
-                    sw.Write(nn.Biases[i, ii].ToString() + " ");
+                    sw.Write(nn.OutputWeights[i, ii].ToString() + " ");
+                }
+            }
+            //Write input biases
+            for (int i = 0; i < NN.InputCount; i++)
+            {
+                sw.Write(nn.InputBiases[i].ToString() + " ");
+            }
+            //Write hidden biases
+            for (int i = 0; i < NN.HiddenDepth; i++)
+            {
+                for (int ii = 0; ii < NN.HiddenCount; ii++)
+                {
+                    sw.Write(nn.HiddenBiases[i, ii].ToString() + " ");
                 }
             }
             sw.Close(); fs.Close();

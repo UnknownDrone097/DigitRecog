@@ -56,6 +56,9 @@ namespace Digits
         //Batch descent
         public void Descend(int batchsize)
         {
+            //Reset avg gradient
+            AvgGradient = 0;
+
             //Input
             for (int i = 0; i < InputCount; i++)
             {
@@ -89,6 +92,13 @@ namespace Digits
                 }
             }
             AvgGradient /= HiddenWeightGradient.Length + InputWeightGradient.Length + OutputWeightGradient.Length;
+
+            //Reset averages
+            AvgInputWeightGradient = new double[InputCount, Resolution * Resolution];
+            AvgHiddenWeightGradient = new double[HiddenDepth, HiddenCount, InputCount];
+            AvgOutputWeightGradient = new double[OutputCount, HiddenCount];
+            AvgHiddenBiasGradient = new double[HiddenDepth, HiddenCount];
+            AvgInputBiasGradient = new double[InputCount];
         }
         public void Descend()
         {

@@ -16,7 +16,7 @@ namespace Digits
         {
             FileStream fs = File.OpenRead(LabelPath);
             //Reset parameters and decrement NN hyperparameters upon new epoch
-            if (!(LabelOffset < fs.Length)) { LabelOffset = 8; ImageOffset = 16; NN.LearningRate *= .6666; NN.Momentum *= .6666; }
+            if (!(LabelOffset < fs.Length)) { LabelOffset = 8; ImageOffset = 16; /*NN.LearningRate *= .6666; NN.Momentum *= .6666;*/ }
 
             fs.Position = LabelOffset;
             byte[] b = new byte[1];
@@ -36,7 +36,7 @@ namespace Digits
             //Read image
             FileStream fs = File.OpenRead(ImagePath);
             //Reset parameters and decrement NN hyperparameters upon new epoch
-            if (!(ImageOffset < fs.Length)) { ImageOffset = 16; LabelOffset = 8; NN.LearningRate *= .6666; NN.Momentum *= .6666; }
+            if (!(ImageOffset < fs.Length)) { ImageOffset = 16; LabelOffset = 8; /*NN.LearningRate *= .6666; NN.Momentum *= .6666;*/ }
             fs.Position = ImageOffset;
             byte[] b = new byte[Resolution * Resolution];
             try

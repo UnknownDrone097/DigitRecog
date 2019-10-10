@@ -24,9 +24,9 @@ namespace Digits
         public static bool isrunning = false;
         public static bool finished = false;
         static double SaveState = 100;
-        static double avg = 1;
+        static double avg = 0;
         static double maxavg = 0;
-        static double avgerror = 1;
+        static double avgerror = 0;
         static int batchsize = 5;
         static double iterator = 1;
         public static void reset()
@@ -37,11 +37,11 @@ namespace Digits
         }
         public static void program()
         {
-            NN nn = new NN(); double[,] image; int correct = -1;
+            NN nn = new NN(); double[,] image; int correct;
+            D.ReadWeightBias(nn);
             //Run the program SaveState times, then save and print out values for that point
             for (int j = 0; j < SaveState; j++)
             {
-                D.ReadWeightBias(nn);
                 for (int i = 0; i < batchsize - 1; i++)
                 {
                     nn.backprop(Reader.ReadNextImage(), Reader.ReadNextLabel());

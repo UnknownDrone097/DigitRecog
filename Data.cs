@@ -8,8 +8,10 @@ namespace Digits
     {
         const string Path = @"C:\Users\gwflu\Desktop\Test\DataBackup.txt";
         static bool Running = false;
+        //Read weight and bias data from a file created by the writer method
         public static void ReadWeightBias(NN nn)
         {
+            //This is a singleton process
             if (Running == true) { throw new Exception("Already accessing file"); }
             Running = true;
             FileStream fs = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.None);
@@ -70,8 +72,10 @@ namespace Digits
             sr.Close(); fs.Close();
             Running = false;
         }
+        //Write weight and bias data to a file
         public static void WriteWeightBias(NN nn)
         {
+            //This is a singleton process
             if (Running == true) { throw new Exception("Already accessing file"); }
             Running = true;
             FileStream fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);

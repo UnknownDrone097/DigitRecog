@@ -12,10 +12,11 @@ namespace Digits
         static int LabelOffset = 8;
         static int ImageOffset = 16;
         static int Resolution = 28;
+        //Simple code to read a single number from a file, offset by a byte of metadata
         public static int ReadNextLabel()
         {
             FileStream fs = File.OpenRead(LabelPath);
-            //Reset parameters and decrement NN hyperparameters upon new epoch
+            //Reset parameters and decrement NN hyperparameters upon new epoch (currently disabled)
             if (!(LabelOffset < fs.Length)) { LabelOffset = 8; ImageOffset = 16; /*NN.LearningRate *= .6666; NN.Momentum *= .6666;*/ }
 
             fs.Position = LabelOffset;
@@ -31,11 +32,12 @@ namespace Digits
             foreach (int i in result) { return i; }
             return -1;
         }
+        //Read a matrix from a file offset by two bytes of metadata
         public static double[,] ReadNextImage()
         {
             //Read image
             FileStream fs = File.OpenRead(ImagePath);
-            //Reset parameters and decrement NN hyperparameters upon new epoch
+            //Reset parameters and decrement NN hyperparameters upon new epoch (currently disabled)
             if (!(ImageOffset < fs.Length)) { ImageOffset = 16; LabelOffset = 8; /*NN.LearningRate *= .6666; NN.Momentum *= .6666;*/ }
             fs.Position = ImageOffset;
             byte[] b = new byte[Resolution * Resolution];
@@ -48,7 +50,7 @@ namespace Digits
             ImageOffset += Resolution * Resolution;
             //Convert to 2d array
             double[,] result = new double[Resolution, Resolution];
-            //Convert array to doubles in result
+            //Convert array to doubles and store in result
             for (int i = 0; i < Resolution; i++)
             {
                 for (int ii = 0; ii < Resolution; ii++)
@@ -56,11 +58,13 @@ namespace Digits
                     result[i, ii] = (double)array[(Resolution * i) + ii];
                 }
             }
+            //Normalize the result matrix
             ActivationFunctions.Normalize(result, Resolution, Resolution);
 
             fs.Close();
             return result;
         }
+        //Print the matrix (not very useful)
         public static void PrintArray(int[,] a)
         {
             for (int i = 0; i < a.Length; i++)

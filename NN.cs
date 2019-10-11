@@ -2,6 +2,13 @@ using System;
 
 namespace Digits
 {
+    /// <summary>
+    /// Prepare to cry!
+    /// Abandon all hope, ye who enter here, for the depths of despair lurk within.
+    /// 
+    /// In all seriousness, if you understand gradients its not that bad, but the math is very obtuse,
+    /// so don't screw with it if you don't know what you're doing.
+    /// </summary>
     class NN : IDisposable
     {
         //May want to add batch normalization
@@ -15,44 +22,47 @@ namespace Digits
         public static int OutputCount = 10;
         public static int Resolution = 28;
         public static int InputCount = Resolution;
-        //An output parameter
+        //An output parameter to be written to console
         public double AvgGradient = 0;
         //Hyperparameters
-        public static double LearningRate = 0.000146;
-        public static double Momentum = .85;
+        public static double LearningRate = 0.00000146;
+        public static double Momentum = .4;
         //Overall gradients
-        public double[,] AvgInputWeightGradient = new double[InputCount, Resolution * Resolution];
-        public double[,,] AvgHiddenWeightGradient = new double[HiddenDepth, HiddenCount, InputCount];
-        public double[,] AvgOutputWeightGradient = new double[OutputCount, HiddenCount];
-        public double[,] AvgHiddenBiasGradient = new double[HiddenDepth, HiddenCount];
-        public double[] AvgInputBiasGradient = new double[InputCount];
+        double[,] AvgInputWeightGradient = new double[InputCount, Resolution * Resolution];
+        double[,,] AvgHiddenWeightGradient = new double[HiddenDepth, HiddenCount, InputCount];
+        double[,] AvgOutputWeightGradient = new double[OutputCount, HiddenCount];
+        double[,] AvgHiddenBiasGradient = new double[HiddenDepth, HiddenCount];
+        double[] AvgInputBiasGradient = new double[InputCount];
         //Error signals
-        public double[] InputErrorSignals = new double[InputCount];
-        public double[,] HiddenErrorSignals = new double[HiddenDepth, HiddenCount];
-        public double[] OutputErrorSignals = new double[OutputCount];
-        //Weights
+        double[] InputErrorSignals = new double[InputCount];
+        double[,] HiddenErrorSignals = new double[HiddenDepth, HiddenCount];
+        double[] OutputErrorSignals = new double[OutputCount];
+        //Weights (public to allow reading and writing without needing methods for it 
+        //[yes, this is bad practice, but the point of this code is the maths, not the practice])
         public double[,] InputWeights = new double[InputCount, Resolution * Resolution];
         public double[,,] HiddenWeights = new double[HiddenDepth, HiddenCount, InputCount];
         public double[,] OutputWeights = new double[OutputCount, HiddenCount];
-        //Biases
+        //Biases (same thing with the publicity)
         public double[] InputBiases = new double[InputCount];
         public double[,] HiddenBiases = new double[HiddenDepth, HiddenCount];
         //Zvals
-        public double[] InputZVals = new double[InputCount];
-        public double[,] HiddenZVals = new double[HiddenDepth, HiddenCount];
-        public double[] OutputZVals = new double[OutputCount];
+        double[] InputZVals = new double[InputCount];
+        double[,] HiddenZVals = new double[HiddenDepth, HiddenCount];
+        double[] OutputZVals = new double[OutputCount];
         //Gradients
-        public double[,] InputWeightGradient = new double[InputCount, Resolution * Resolution];
-        public double[,,] HiddenWeightGradient = new double[Depth - 1, HiddenCount, InputCount];
-        public double[,] OutputWeightGradient = new double[OutputCount, HiddenCount];
+        double[,] InputWeightGradient = new double[InputCount, Resolution * Resolution];
+        double[,,] HiddenWeightGradient = new double[Depth - 1, HiddenCount, InputCount];
+        double[,] OutputWeightGradient = new double[OutputCount, HiddenCount];
         //Momentums
-        public double[,] InputWeightMomentum = new double[InputCount, Resolution * Resolution];
-        public double[,,] HiddenWeightMomentum = new double[Depth - 1, HiddenCount, InputCount];
-        public double[,] OutputWeightMomentum = new double[OutputCount, HiddenCount];
+        double[,] InputWeightMomentum = new double[InputCount, Resolution * Resolution];
+        double[,,] HiddenWeightMomentum = new double[Depth - 1, HiddenCount, InputCount];
+        double[,] OutputWeightMomentum = new double[OutputCount, HiddenCount];
         //Values
         double[] InputValues = new double[InputCount];
         double[,] HiddenValues = new double[HiddenDepth, HiddenCount];
+        //Public to allow reading for validation
         public double[] OutputValues = new double[OutputCount];
+
         //Batch descent
         public void Descend(int batchsize)
         {
@@ -100,6 +110,7 @@ namespace Digits
             AvgHiddenBiasGradient = new double[HiddenDepth, HiddenCount];
             AvgInputBiasGradient = new double[InputCount];
         }
+        //Stochastic descent (all code below is done according to formulas)
         public void Descend()
         {
             //Input
@@ -138,16 +149,20 @@ namespace Digits
                 }
             }
         }
+        /// <summary>
+        /// Backpropagation of error (formulas)
+        /// </summary>
+        /// <param name="image">The matrix (image) to be forward propagated from</param>
+        /// <param name="correct">The number shown in the image</param>
         public void backprop(double[,] image, int correct)
         {
-            //Run NN on image
+            //Forward propagation of data
             calculate(image);
 
-            //Reset arrays
+            //Reset things about to be calculated
             InputErrorSignals = new double[InputCount];
             HiddenErrorSignals = new double[HiddenDepth, HiddenCount];
             OutputErrorSignals = new double[OutputCount];
-
             InputWeightGradient = new double[InputCount, Resolution * Resolution];
             HiddenWeightGradient = new double[Depth - 1, HiddenCount, InputCount];
             OutputWeightGradient = new double[OutputCount, HiddenCount];
@@ -213,8 +228,8 @@ namespace Digits
                     InputWeightGradient[k, j] = image[j / Resolution, j - ((j / Resolution) * Resolution)] * ActivationFunctions.TanhDerriv(InputZVals[k]) * InputErrorSignals[k];
                 }
             }
+            //Normalize gradients (currently disabled as is obvious)
             /*
-            //Normalize gradients
             InputWeightGradient = ActivationFunctions.Normalize(InputWeightGradient, InputCount, Resolution * Resolution);
             HiddenWeightGradient = ActivationFunctions.Normalize(HiddenWeightGradient, HiddenDepth, HiddenCount, InputCount);
             OutputWeightGradient = ActivationFunctions.Normalize(OutputWeightGradient, OutputCount, HiddenCount);
@@ -223,14 +238,20 @@ namespace Digits
             InputErrorSignals = ActivationFunctions.Normalize(InputErrorSignals);
             */
         }
+        /// <summary>
+        /// Forward propagation of values
+        /// </summary>
+        /// <param name="image">The matrix (image) to be forward propagated from</param>
         public void calculate(double[,] image)
         {
-            //Reset ZVals
+            //Reset ZVals (raw values untouched by the activation function)
             InputZVals = new double[InputCount];
             HiddenZVals = new double[HiddenDepth, HiddenCount];
             OutputZVals = new double[OutputCount];
 
-            Random r = new Random();
+            //Random r = new Random();
+            //Random is used for dropout of neurons, but said feature is currently disabled for efficiency reasons
+
             //Input
             for (int k = 0; k < InputCount; k++)
             {
@@ -247,6 +268,7 @@ namespace Digits
                 {
                     for (int j = 0; j < InputCount; j++)
                     {
+                        //Former dropout code, if desired must be added to input and output as well
                         //if (l == Depth - 2) { dropout = (r.NextDouble() <= DropoutRate ? 0 : 1); } else { dropout = 1; }
                         HiddenZVals[l, k] += (((HiddenWeights[l, k, j] + HiddenWeightMomentum[l, k, j]) * InputZVals[j]) + HiddenBiases[l, k]);
                     }
@@ -265,6 +287,9 @@ namespace Digits
                 //OutputValues[k] = ActivationFunctions.Tanh(OutputZVals[k]);
             }
         }
+        /// <summary>
+        /// Reset the weights and biases of the neuron (randomly and to zero, respectively)
+        /// </summary>
         public void initialize()
         {
             Random r = new Random();
@@ -300,6 +325,7 @@ namespace Digits
             }
         }
 
+        //Probably useless?
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
@@ -336,11 +362,16 @@ namespace Digits
         }
         #endregion
     }
+    /// <summary>
+    /// Mapping the raw data onto a neuron-like firing state (on or off, ish)
+    /// </summary>
     class ActivationFunctions
     {
+        //Hyperbolic tangent
         public static double Tanh(double number)
         {
             return (Math.Pow(Math.E, 2 * number) - 1) / (Math.Pow(Math.E, 2 * number) + 1);
+            //The following is unused Smooth ReLU code
             /*
             double num = Math.Log(1 + Math.Pow(Math.E, number));
             if (num < 0) { num = 0; }
@@ -350,12 +381,17 @@ namespace Digits
             return num;
             */
         }
-        //Derrivative of the softplus
+        //Derrivative of the activation function
         public static double TanhDerriv(double number)
         {
             return (1 - Math.Pow(Tanh(number), 2));
         }
         //Currently no clipping, may want to add eventually?
+        /// <summary>
+        /// Normalize the data contained in the array
+        /// </summary>
+        /// <param name="array">Array to be normalized</param>
+        /// <returns></returns>
         public static double[] Normalize(double[] array)
         {
             double mean = 0;
@@ -376,6 +412,13 @@ namespace Digits
             }
             return array;
         }
+        /// <summary>
+        /// Normalize the data contained in the array
+        /// </summary>
+        /// <param name="array">Array to be normalized</param>
+        /// <param name="depth">Row count of array</param>
+        /// <param name="count">Column count of array</param>
+        /// <returns></returns>
         public static double[,] Normalize(double[,] array, int depth, int count)
         {
             double[] smallarray = new double[depth * count];
@@ -400,6 +443,14 @@ namespace Digits
             }
             return array;
         }
+        /// <summary>
+        /// Normalize the data contained in the array
+        /// </summary>
+        /// <param name="array">Array to be normalized</param>
+        /// <param name="depth">Row count of array</param>
+        /// <param name="count1">Row count of each column of the sub-array</param>
+        /// <param name="count2">Column count of the sub-array</param>
+        /// <returns></returns>
         public static double[,,] Normalize(double[,,] array, int depth, int count1, int count2)
         {
             double[] workingvalues = new double[depth * count1 * count2];

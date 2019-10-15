@@ -7,17 +7,30 @@ namespace Digits
 {
     public static class Reader
     {
-        private static string LabelPath = @"C:\Users\gwflu\Desktop\Test\train-labels-idx1-ubyte\train-labels.idx1-ubyte";
-        private static string ImagePath = @"C:\Users\gwflu\Desktop\Test\train-images-idx3-ubyte\train-images.idx3-ubyte";
+        //Stored paths for ease of use
+        public static bool Testing = false;
+        public static bool LabelReaderRunning = false;
+        public static bool ImageReaderRunning = false;
+
+        private static string TrainImagePath = @"C:\Users\gwflu\Desktop\Test\train-images-idx3-ubyte\train-images.idx3-ubyte";
+        private static string TrainLabelPath = @"C:\Users\gwflu\Desktop\Test\train-labels-idx1-ubyte\train-labels.idx1-ubyte";
+        private static string TestLabelPath = @"C:\Users\gwflu\Desktop\Test\t10k-labels-idx1-ubyte\t10k-labels.idx1-ubyte";
+        private static string TestImagePath = @"C:\Users\gwflu\Desktop\Test\t10k-images-idx3-ubyte\t10k-images.idx3-ubyte";
+
+        private static string LabelPath = Testing ? TestLabelPath : TrainLabelPath;
+        private static string ImagePath = Testing ? TestImagePath : TrainImagePath;
         static int LabelOffset = 8;
         static int ImageOffset = 16;
         static int Resolution = 28;
         //Simple code to read a single number from a file, offset by a byte of metadata
         public static int ReadNextLabel()
         {
+            //Singleton process
+            if (LabelReaderRunning) { throw new Exception("Already accessing file"); }
+
             FileStream fs = File.OpenRead(LabelPath);
             //Reset parameters and decrement NN hyperparameters upon new epoch (currently disabled)
-            if (!(LabelOffset < fs.Length)) { LabelOffset = 8; ImageOffset = 16; /*NN.LearningRate *= .6666; NN.Momentum *= .6666;*/ }
+            if (!(LabelOffset < fs.Length)) { LabelOffset = 8; ImageOffset = 16; }
 
             fs.Position = LabelOffset;
             byte[] b = new byte[1];
@@ -35,10 +48,13 @@ namespace Digits
         //Read a matrix from a file offset by two bytes of metadata
         public static double[,] ReadNextImage()
         {
+            //Singleton
+            if (ImageReaderRunning) { throw new Exception("Already accessing file"); }
+
             //Read image
             FileStream fs = File.OpenRead(ImagePath);
             //Reset parameters and decrement NN hyperparameters upon new epoch (currently disabled)
-            if (!(ImageOffset < fs.Length)) { ImageOffset = 16; LabelOffset = 8; /*NN.LearningRate *= .6666; NN.Momentum *= .6666;*/ }
+            if (!(ImageOffset < fs.Length)) { ImageOffset = 16; LabelOffset = 8; }
             fs.Position = ImageOffset;
             byte[] b = new byte[Resolution * Resolution];
             try
@@ -59,19 +75,19 @@ namespace Digits
                 }
             }
             //Normalize the result matrix
-            ActivationFunctions.Normalize(result, Resolution, Resolution);
+            ActivationFunctions.Normalize(result, true, Resolution, Resolution);
 
             fs.Close();
             return result;
         }
         //Print the matrix (not very useful)
-        public static void PrintArray(int[,] a)
+        public static void PrintArray(double[,] a)
         {
-            for (int i = 0; i < a.Length; i++)
+            for (int i = 0; i < Math.Sqrt(a.Length); i++)
             {
-                for (int ii = 0; ii < a.Length; ii++)
+                for (int ii = 0; ii < Math.Sqrt(a.Length); ii++)
                 {
-                    Console.Write(a[i, ii].ToString().PadRight(5));
+                    Console.Write(a[i, ii].ToString().PadRight(3));
                 }
                 Console.WriteLine();
             }

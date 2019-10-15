@@ -9,7 +9,7 @@ namespace Digits
         const string Path = @"C:\Users\gwflu\Desktop\Test\DataBackup.txt";
         static bool Running = false;
         //Read weight and bias data from a file created by the writer method
-        public static void ReadWeightBias(NN nn)
+        public static void ReadWeightBias()
         {
             //This is a singleton process
             if (Running == true) { throw new Exception("Already accessing file"); }
@@ -25,7 +25,7 @@ namespace Digits
                 for (int ii = 0; ii < NN.Resolution * NN.Resolution; ii++)
                 {
                     double.TryParse(splitline[iterator], out double weight);
-                    nn.InputWeights[i, ii] = weight;
+                    NN.InputWeights[i, ii] = weight;
                     iterator++;
                 }
             }
@@ -34,11 +34,23 @@ namespace Digits
             {
                 for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
-                    for (int iii = 0; iii < NN.InputCount; iii++)
+                    if (i == 0)
                     {
-                        double.TryParse(splitline[iterator], out double weight);
-                        nn.HiddenWeights[i, ii, iii] = weight;
-                        iterator++;
+                        for (int iii = 0; iii < NN.InputCount; iii++)
+                        {
+                            double.TryParse(splitline[iterator], out double weight);
+                            NN.FirstHiddenWeights[ii, iii] = weight;
+                            iterator++;
+                        }
+                    }
+                    else
+                    {
+                        for (int iii = 0; iii < NN.HiddenCount; iii++)
+                        {
+                            double.TryParse(splitline[iterator], out double weight);
+                            NN.HiddenWeights[i - 1, ii, iii] = weight;
+                            iterator++;
+                        }
                     }
                 }
             }
@@ -48,7 +60,7 @@ namespace Digits
                 for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
                     double.TryParse(splitline[iterator], out double weight);
-                    nn.OutputWeights[i, ii] = weight;
+                    NN.OutputWeights[i, ii] = weight;
                     iterator++;
                 }
             }
@@ -56,7 +68,7 @@ namespace Digits
             for (int i = 0; i < NN.InputCount; i++)
             {
                 double.TryParse(splitline[iterator], out double bias);
-                nn.InputBiases[i] = bias;
+                NN.InputBiases[i] = bias;
                 iterator++;
             }
             //Read hidden biases
@@ -65,7 +77,7 @@ namespace Digits
                 for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
                     double.TryParse(splitline[iterator], out double bias);
-                    nn.HiddenBiases[i, ii] = bias;
+                    NN.HiddenBiases[i, ii] = bias;
                     iterator++;
                 }
             }
@@ -73,7 +85,7 @@ namespace Digits
             Running = false;
         }
         //Write weight and bias data to a file
-        public static void WriteWeightBias(NN nn)
+        public static void WriteWeightBias()
         {
             //This is a singleton process
             if (Running == true) { throw new Exception("Already accessing file"); }
@@ -85,7 +97,7 @@ namespace Digits
             {
                 for (int ii = 0; ii < NN.Resolution * NN.Resolution; ii++)
                 {
-                    sw.Write(nn.InputWeights[i, ii].ToString() + " ");
+                    sw.Write(NN.InputWeights[i, ii].ToString() + " ");
                 }
             }
             //Write hidden weights
@@ -93,9 +105,19 @@ namespace Digits
             {
                 for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
-                    for (int iii = 0; iii < NN.InputCount; iii++)
+                    if (i == 0)
                     {
-                        sw.Write(nn.HiddenWeights[i, ii, iii].ToString() + " ");
+                        for (int iii = 0; iii < NN.InputCount; iii++)
+                        {
+                            sw.Write(NN.FirstHiddenWeights[ii, iii].ToString() + " ");
+                        }
+                    }
+                    else
+                    {
+                        for (int iii = 0; iii < NN.HiddenCount; iii++)
+                        {
+                            sw.Write(NN.HiddenWeights[i - 1, ii, iii].ToString() + " ");
+                        }
                     }
                 }
             }
@@ -104,20 +126,20 @@ namespace Digits
             {
                 for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
-                    sw.Write(nn.OutputWeights[i, ii].ToString() + " ");
+                    sw.Write(NN.OutputWeights[i, ii].ToString() + " ");
                 }
             }
             //Write input biases
             for (int i = 0; i < NN.InputCount; i++)
             {
-                sw.Write(nn.InputBiases[i].ToString() + " ");
+                sw.Write(NN.InputBiases[i].ToString() + " ");
             }
             //Write hidden biases
             for (int i = 0; i < NN.HiddenDepth; i++)
             {
                 for (int ii = 0; ii < NN.HiddenCount; ii++)
                 {
-                    sw.Write(nn.HiddenBiases[i, ii].ToString() + " ");
+                    sw.Write(NN.HiddenBiases[i, ii].ToString() + " ");
                 }
             }
             sw.Close(); fs.Close();
